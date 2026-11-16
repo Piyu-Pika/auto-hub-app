@@ -158,24 +158,15 @@ class _SavedPageState extends State<SavedPage> {
                           : RefreshIndicator(
                               onRefresh: _fetchSavedParts,
                               color: AppColors.accentCyan,
-                              child: GridView.builder(
+                              child: ListView.builder(
                                 padding: EdgeInsets.all(16.w),
-                                gridDelegate:
-                                    SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  childAspectRatio: 0.58,
-                                  crossAxisSpacing: 12.w,
-                                  mainAxisSpacing: 12.h,
-                                ),
                                 itemCount: _savedParts.length,
                                 itemBuilder: (context, index) {
                                   final part = _savedParts[index];
                                   return ProductCard(
                                     part: part,
-                                    onTap: () => context.push(
-                                      '/part-details',
-                                      extra: part.id,
-                                    ),
+                                    onTap: () =>
+                                        context.push('/part-details/${part.id}'),
                                     onFavoriteTap: () => _removeSaved(part.id),
                                   );
                                 },

@@ -11,49 +11,11 @@ class HomeFeaturedParts extends StatelessWidget {
 
   final List<ProductPartItem>? parts;
 
-  static final _defaultItems = [
-    const PartItemData(
-      imagePath: 'assets/images/home_part_alternator.png',
-      title: 'OEM Alternator',
-      subtitle: 'Honda Civic (2016–2021)',
-      price: '\$185',
-      category: 'Electrical',
-      warranty: '90 Days',
-      location: 'Houston, TX',
-      rating: 4.8,
-      badge: PartBadgeType.featured,
-      condition: PartCondition.excellent,
-    ),
-    const PartItemData(
-      imagePath: 'assets/images/home_part_bumper.png',
-      title: 'Front Bumper Assembly',
-      subtitle: 'Ford F-150 (2018–2020)',
-      price: '\$320',
-      category: 'Body',
-      warranty: '30 Days',
-      location: 'Phoenix, AZ',
-      rating: 4.6,
-      badge: PartBadgeType.hotDeal,
-      condition: PartCondition.good,
-    ),
-    const PartItemData(
-      imagePath: 'assets/images/home_part_engine.png',
-      title: '2.5L 4-Cylinder Engine',
-      subtitle: 'Subaru Outback (2015–2019)',
-      price: '\$1,650',
-      category: 'Engine',
-      warranty: '6 Months',
-      location: 'Seattle, WA',
-      rating: 4.8,
-      badge: PartBadgeType.featured,
-      condition: PartCondition.excellent,
-    ),
-  ];
-
   List<PartItemData> get _items {
     if (parts != null && parts!.isNotEmpty) {
       return parts!.map((p) {
         return PartItemData(
+          id: p.id,
           imagePath: p.imagePath,
           title: p.title,
           subtitle: '${p.make} ${p.model} (${p.yearRange})',
@@ -71,11 +33,16 @@ class HomeFeaturedParts extends StatelessWidget {
         );
       }).toList();
     }
-    return _defaultItems;
+    return const [];
   }
 
   @override
   Widget build(BuildContext context) {
+    final items = _items;
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -85,74 +52,77 @@ class HomeFeaturedParts extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 24.w,
-                    height: 24.h,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0DA0CE).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10.r),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Featured Parts',
+                      style: GoogleFonts.inter(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFFF0F6FC),
+                        letterSpacing: -0.3,
+                      ),
                     ),
-                    alignment: Alignment.center,
-                    child: SvgPicture.asset(
-                      'assets/icons/ic_trending_up.svg',
-                      width: 13.w,
-                      height: 13.h,
+                    SizedBox(height: 2.h),
+                    Text(
+                      'Hand-picked quality parts from verified yards',
+                      style: GoogleFonts.inter(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w400,
+                        color: const Color(0xFF8B929A),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  SizedBox(width: 8.w),
-                  Text(
-                    'Featured Parts',
-                    style: GoogleFonts.inter(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFFF0F6FC),
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              Row(
-                children: [
-                  Text(
-                    'View all',
-                    style: GoogleFonts.inter(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF0DA0CE),
+              SizedBox(width: 8.w),
+              GestureDetector(
+                onTap: () => context.push('/browse'),
+                child: Row(
+                  children: [
+                    Text(
+                      'View all',
+                      style: GoogleFonts.inter(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF0DA0CE),
+                      ),
                     ),
-                  ),
-                  SizedBox(width: 2.w),
-                  SvgPicture.asset(
-                    'assets/icons/ic_chevron_right.svg',
-                    width: 13.w,
-                    height: 13.h,
-                    colorFilter: const ColorFilter.mode(
-                      Color(0xFF0DA0CE),
-                      BlendMode.srcIn,
+                    SizedBox(width: 2.w),
+                    SvgPicture.asset(
+                      'assets/icons/ic_chevron_right.svg',
+                      width: 12.w,
+                      height: 12.h,
+                      colorFilter: const ColorFilter.mode(
+                        Color(0xFF0DA0CE),
+                        BlendMode.srcIn,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
         ),
-
-        SizedBox(height: 12.h),
-
-        // Horizontal scroll cards
+        SizedBox(height: 16.h),
+        // Horizontal list
         SizedBox(
-          height: 252.h,
+          height: 256.h,
           child: ListView.separated(
+            padding: EdgeInsets.symmetric(horizontal: 20.w),
             scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.only(left: 20.w),
-            itemCount: _items.length,
-            separatorBuilder: (_, __) => SizedBox(width: 16.w),
+            physics: const BouncingScrollPhysics(),
+            itemCount: items.length,
+            separatorBuilder: (context, index) => SizedBox(width: 14.w),
             itemBuilder: (context, index) {
-              return GestureDetector(
-                onTap: () => context.push('/part-details'),
-                child: HomePartCardHorizontal(item: _items[index]),
+              final item = items[index];
+              return HomePartCardHorizontal(
+                item: item,
+                onTap: () => context.push('/part-details/${item.id}'),
               );
             },
           ),

@@ -1,10 +1,13 @@
+import 'package:auto_hub_app/core/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class HomeHeroBanner extends StatelessWidget {
-  const HomeHeroBanner({super.key});
+  final String? imageUrl;
+
+  const HomeHeroBanner({super.key, this.imageUrl});
 
   @override
   Widget build(BuildContext context) {
@@ -19,8 +22,10 @@ class HomeHeroBanner extends StatelessWidget {
             children: [
               // Background Image
               Positioned.fill(
-                child: Image.asset(
-                  'assets/images/home_banner.png',
+                child: AppImage(
+                  imagePath: (imageUrl != null && imageUrl!.trim().isNotEmpty)
+                      ? imageUrl!
+                      : 'assets/images/home_banner.png',
                   fit: BoxFit.cover,
                 ),
               ),

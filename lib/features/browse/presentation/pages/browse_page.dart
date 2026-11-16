@@ -29,6 +29,8 @@ class _BrowsePageState extends State<BrowsePage> {
   SortType _sortType = SortType.newest;
   final TextEditingController _partController = TextEditingController();
   final TextEditingController _vinController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  Timer? _debounceTimer;
 
   // Filters State
   List<String> _selectedMakes = ['All Makes'];
@@ -39,6 +41,11 @@ class _BrowsePageState extends State<BrowsePage> {
   // Repository & State
   late final BrowseRepository _repository;
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  int _currentPage = 1;
+  static const int _pageSize = 20;
+
   List<ProductPartItem> _parts = [];
   int _totalCount = 0; // To keep track of listed count
 
@@ -46,11 +53,25 @@ class _BrowsePageState extends State<BrowsePage> {
   void initState() {
     super.initState();
     _repository = getIt<BrowseRepository>();
+    _scrollController.addListener(_onScroll);
     unawaited(_loadInitialCount());
     unawaited(_fetchParts());
 
     _partController.addListener(_onPartSearchChanged);
     _vinController.addListener(_onVinSearchChanged);
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.offset;
+    // Trigger load more when 250px before reaching the bottom
+    if (currentScroll >= (maxScroll - 250) &&
+        !_isLoading &&
+        !_isLoadingMore &&
+        _hasMore) {
+      unawaited(_loadMoreParts());
+    }
   }
 
   Future<void> _loadInitialCount() async {
@@ -64,17 +85,30 @@ class _BrowsePageState extends State<BrowsePage> {
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    _debounceTimer?.cancel();
     _partController.dispose();
     _vinController.dispose();
     super.dispose();
   }
 
   void _onPartSearchChanged() {
-    unawaited(_fetchParts());
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+      if (mounted) {
+        unawaited(_fetchParts());
+      }
+    });
   }
 
   void _onVinSearchChanged() {
-    unawaited(_fetchParts());
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+      if (mounted) {
+        unawaited(_fetchParts());
+      }
+    });
   }
 
   void _clearFilters() {
@@ -118,45 +152,132 @@ class _BrowsePageState extends State<BrowsePage> {
       categories: categories,
       conditions: conditions,
       maxPrice: maxPrice,
+      limit: 100,
     );
     return results.length;
   }
 
-  Future<void> _fetchParts() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    var results = <ProductPartItem>[];
-    if (_searchType == SearchType.vin) {
-      final vinText = _vinController.text.trim();
-      results = await _repository.searchByVin(vinText);
-    } else {
-      results = await _repository.searchParts(
-        query: _partController.text.trim(),
-        makes: _selectedMakes,
-        categories: _selectedCategories,
-        conditions: _selectedConditions,
-        maxPrice: _maxPrice,
-      );
-    }
-
-    // Apply Sorting
+  void _sortPartsList(List<ProductPartItem> list) {
     switch (_sortType) {
       case SortType.priceAsc:
-        results.sort((a, b) => a.price.compareTo(b.price));
+        list.sort((a, b) => a.price.compareTo(b.price));
       case SortType.priceDesc:
-        results.sort((a, b) => b.price.compareTo(a.price));
+        list.sort((a, b) => b.price.compareTo(a.price));
       case SortType.topRated:
-        results.sort((a, b) => b.rating.compareTo(a.rating));
+        list.sort((a, b) => b.rating.compareTo(a.rating));
       case SortType.newest:
     }
+  }
 
-    if (mounted) {
+  Future<void> _fetchParts({bool reset = true}) async {
+    if (reset) {
       setState(() {
-        _parts = results;
-        _isLoading = false;
+        _isLoading = true;
+        _currentPage = 1;
+        _hasMore = true;
       });
+    }
+
+    var results = <ProductPartItem>[];
+    try {
+      if (_searchType == SearchType.vin) {
+        final vinText = _vinController.text.trim();
+        results = await _repository.searchByVin(
+          vinText,
+          page: 1,
+          limit: _pageSize,
+        );
+      } else {
+        results = await _repository.searchParts(
+          query: _partController.text.trim(),
+          makes: _selectedMakes,
+          categories: _selectedCategories,
+          conditions: _selectedConditions,
+          maxPrice: _maxPrice,
+          page: 1,
+          limit: _pageSize,
+        );
+      }
+
+      _sortPartsList(results);
+
+      if (mounted) {
+        setState(() {
+          _parts = results;
+          _currentPage = 1;
+          _hasMore = results.length >= _pageSize;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadMoreParts() async {
+    if (_isLoading || _isLoadingMore || !_hasMore) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    final nextPage = _currentPage + 1;
+    var newItems = <ProductPartItem>[];
+
+    try {
+      if (_searchType == SearchType.vin) {
+        final vinText = _vinController.text.trim();
+        newItems = await _repository.searchByVin(
+          vinText,
+          page: nextPage,
+          limit: _pageSize,
+        );
+      } else {
+        newItems = await _repository.searchParts(
+          query: _partController.text.trim(),
+          makes: _selectedMakes,
+          categories: _selectedCategories,
+          conditions: _selectedConditions,
+          maxPrice: _maxPrice,
+          page: nextPage,
+          limit: _pageSize,
+        );
+      }
+
+      if (mounted) {
+        if (newItems.isEmpty) {
+          setState(() {
+            _hasMore = false;
+            _isLoadingMore = false;
+          });
+        } else {
+          // Filter duplicates by id to ensure stable list
+          final existingIds = _parts.map((p) => p.id).toSet();
+          final uniqueNewItems =
+              newItems.where((p) => !existingIds.contains(p.id)).toList();
+
+          final updatedParts = List<ProductPartItem>.from(_parts)
+            ..addAll(uniqueNewItems);
+          _sortPartsList(updatedParts);
+
+          setState(() {
+            _currentPage = nextPage;
+            _parts = updatedParts;
+            _hasMore = newItems.length >= _pageSize;
+            _isLoadingMore = false;
+          });
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+        });
+      }
     }
   }
 
@@ -190,7 +311,16 @@ class _BrowsePageState extends State<BrowsePage> {
 
   Future<void> _toggleFavorite(String partId) async {
     await _repository.toggleFavorite(partId);
-    await _fetchParts();
+    if (mounted) {
+      setState(() {
+        _parts = _parts.map((p) {
+          if (p.id == partId) {
+            return p.copyWith(isFavorite: !p.isFavorite);
+          }
+          return p;
+        }).toList();
+      });
+    }
   }
 
   @override
@@ -233,7 +363,8 @@ class _BrowsePageState extends State<BrowsePage> {
                       setState(() {
                         _sortType = sort;
                       });
-                      unawaited(_fetchParts());
+                      _sortPartsList(_parts);
+                      setState(() {});
                     },
                   ),
                   SizedBox(height: 12.h),
@@ -242,113 +373,158 @@ class _BrowsePageState extends State<BrowsePage> {
             ),
             const Divider(color: Color(0x12FFFFFF), height: 1),
 
-            // Scrollable content area
+            // Scrollable content area with pull-to-refresh & infinite scroll
             Expanded(
-              child: ListView(
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-                children: [
-                  // VIN banner if valid VIN typed
-                  if (showVinBanner) ...[
-                    Container(
-                      padding: EdgeInsets.all(14.r),
-                      decoration: BoxDecoration(
-                        color: AppColors.success.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(
-                          color: AppColors.success.withValues(alpha: 0.3),
+              child: RefreshIndicator(
+                onRefresh: () => _fetchParts(reset: true),
+                color: AppColors.info,
+                backgroundColor: const Color(0xFF1C2330),
+                child: ListView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 20.w,
+                    vertical: 16.h,
+                  ),
+                  children: [
+                    // VIN banner if valid VIN typed
+                    if (showVinBanner) ...[
+                      Container(
+                        padding: EdgeInsets.all(14.r),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(12.r),
+                          border: Border.all(
+                            color: AppColors.success.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.check_circle_outline_rounded,
+                              color: AppColors.success,
+                            ),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: Text(
+                                'Showing parts compatible with VIN:\n'
+                                '${_vinController.text}',
+                                style: GoogleFonts.inter(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.success,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.check_circle_outline_rounded,
-                            color: AppColors.success,
+                      SizedBox(height: 16.h),
+                    ],
+
+                    // Results header Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${_parts.length} parts found',
+                          style: GoogleFonts.inter(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textSecondary,
                           ),
-                          SizedBox(width: 12.w),
-                          Expanded(
-                            child: Text(
-                              'Showing parts compatible with VIN:\n'
-                              '${_vinController.text}',
-                              style: GoogleFonts.inter(
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.success,
-                                height: 1.4,
+                        ),
+                        if (_searchType == SearchType.part &&
+                            _areFiltersApplied())
+                          GestureDetector(
+                            onTap: _clearFilters,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.close,
+                                  size: 14.r,
+                                  color: AppColors.info,
+                                ),
+                                SizedBox(width: 4.w),
+                                Text(
+                                  'Clear filters',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.info,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                    SizedBox(height: 16.h),
+
+                    if (_isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(48),
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.info,
+                            ),
+                          ),
+                        ),
+                      )
+                    else if (_parts.isEmpty)
+                      EmptyPartsView(onClearFilters: _clearFilters)
+                    else ...[
+                      ..._parts.map((part) {
+                        return ProductCard(
+                          part: part,
+                          onFavoriteTap: () =>
+                              unawaited(_toggleFavorite(part.id)),
+                          onTap: () {
+                            unawaited(context.push('/part-details/${part.id}'));
+                          },
+                        );
+                      }),
+
+                      // Loading more indicator at the bottom
+                      if (_isLoadingMore)
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24.h),
+                          child: const Center(
+                            child: SizedBox(
+                              width: 28,
+                              height: 28,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.info,
+                                ),
                               ),
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                  ],
-
-                  // Results header Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${_parts.length} parts found',
-                        style: GoogleFonts.inter(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      if (_searchType == SearchType.part &&
-                          _areFiltersApplied())
-                        GestureDetector(
-                          onTap: _clearFilters,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.close,
-                                size: 14.r,
-                                color: AppColors.info,
+                        )
+                      else if (!_hasMore && _parts.length >= _pageSize)
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24.h),
+                          child: Center(
+                            child: Text(
+                              'You’ve reached the end of the parts catalog',
+                              style: GoogleFonts.inter(
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textSecondary
+                                    .withValues(alpha: 0.6),
                               ),
-                              SizedBox(width: 4.w),
-                              Text(
-                                'Clear filters',
-                                style: GoogleFonts.inter(
-                                  fontSize: 12.sp,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.info,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                     ],
-                  ),
-                  SizedBox(height: 16.h),
-
-                  if (_isLoading)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32),
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppColors.info,
-                          ),
-                        ),
-                      ),
-                    )
-                  else if (_parts.isEmpty)
-                    EmptyPartsView(onClearFilters: _clearFilters)
-                  else
-                    ..._parts.map((part) {
-                      return ProductCard(
-                        part: part,
-                        onFavoriteTap: () =>
-                            unawaited(_toggleFavorite(part.id)),
-                        onTap: () {
-                          unawaited(context.push('/part-details'));
-                        },
-                      );
-                    }),
-                ],
+                  ],
+                ),
               ),
             ),
           ],

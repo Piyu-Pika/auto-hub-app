@@ -11,61 +11,11 @@ class HomeRecentListings extends StatelessWidget {
 
   final List<ProductPartItem>? parts;
 
-  static final _defaultItems = [
-    const PartItemData(
-      imagePath: 'assets/images/home_part_alternator.png',
-      title: 'OEM Alternator',
-      subtitle: 'Honda Civic (2016–2021)',
-      price: '\$185',
-      category: 'Electrical',
-      warranty: '90 Days',
-      location: 'Houston, TX',
-      rating: 4.8,
-      badge: PartBadgeType.featured,
-      condition: PartCondition.excellent,
-    ),
-    const PartItemData(
-      imagePath: 'assets/images/home_part_bumper.png',
-      title: 'Front Bumper Assembly',
-      subtitle: 'Ford F-150 (2018–2020)',
-      price: '\$320',
-      category: 'Body',
-      warranty: '30 Days',
-      location: 'Phoenix, AZ',
-      rating: 4.6,
-      badge: PartBadgeType.hotDeal,
-      condition: PartCondition.good,
-    ),
-    const PartItemData(
-      imagePath: 'assets/images/home_part_transmission.png',
-      title: '6-Speed Automatic Transmission',
-      subtitle: 'Chevrolet Malibu (2016–2019)',
-      price: '\$750',
-      category: 'Transmission',
-      warranty: '6 Months',
-      location: 'Chicago, IL',
-      rating: 4.9,
-      badge: PartBadgeType.certified,
-      condition: PartCondition.excellent,
-    ),
-    const PartItemData(
-      imagePath: 'assets/images/home_part_headlight.png',
-      title: 'LED Headlight Assembly — Left',
-      subtitle: 'Toyota Camry (2018–2022)',
-      price: '\$275',
-      category: 'Electrical',
-      warranty: '90 Days',
-      location: 'Los Angeles, CA',
-      rating: 4.7,
-      badge: PartBadgeType.none,
-      condition: PartCondition.excellent,
-    ),
-  ];
-
   List<PartItemData> get _items {
     if (parts != null && parts!.isNotEmpty) {
       return parts!.map((p) {
         return PartItemData(
+          id: p.id,
           imagePath: p.imagePath,
           title: p.title,
           subtitle: '${p.make} ${p.model} (${p.yearRange})',
@@ -83,11 +33,16 @@ class HomeRecentListings extends StatelessWidget {
         );
       }).toList();
     }
-    return _defaultItems;
+    return const [];
   }
 
   @override
   Widget build(BuildContext context) {
+    final items = _items;
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -97,75 +52,99 @@ class HomeRecentListings extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 24.w,
-                    height: 24.h,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFA78BFA).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10.r),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 28.w,
+                      height: 28.h,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0DA0CE).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      alignment: Alignment.center,
+                      child: SvgPicture.asset(
+                        'assets/icons/ic_sparkles.svg',
+                        width: 14.w,
+                        height: 14.h,
+                        colorFilter: const ColorFilter.mode(
+                          Color(0xFF0DA0CE),
+                          BlendMode.srcIn,
+                        ),
+                      ),
                     ),
-                    alignment: Alignment.center,
-                    child: SvgPicture.asset(
-                      'assets/icons/ic_sparkles.svg',
-                      width: 13.w,
-                      height: 13.h,
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Recent Listings',
+                            style: GoogleFonts.inter(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFFF0F6FC),
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          SizedBox(height: 2.h),
+                          Text(
+                            'Fresh parts added today',
+                            style: GoogleFonts.inter(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w400,
+                              color: const Color(0xFF8B929A),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  SizedBox(width: 8.w),
-                  Text(
-                    'Recent Listings',
-                    style: GoogleFonts.inter(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFFF0F6FC),
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              Row(
-                children: [
-                  Text(
-                    'View all',
-                    style: GoogleFonts.inter(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF0DA0CE),
+              SizedBox(width: 8.w),
+              GestureDetector(
+                onTap: () => context.push('/browse'),
+                child: Row(
+                  children: [
+                    Text(
+                      'View all',
+                      style: GoogleFonts.inter(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF0DA0CE),
+                      ),
                     ),
-                  ),
-                  SizedBox(width: 2.w),
-                  SvgPicture.asset(
-                    'assets/icons/ic_chevron_right.svg',
-                    width: 13.w,
-                    height: 13.h,
-                    colorFilter: const ColorFilter.mode(
-                      Color(0xFF0DA0CE),
-                      BlendMode.srcIn,
+                    SizedBox(width: 2.w),
+                    SvgPicture.asset(
+                      'assets/icons/ic_chevron_right.svg',
+                      width: 12.w,
+                      height: 12.h,
+                      colorFilter: const ColorFilter.mode(
+                        Color(0xFF0DA0CE),
+                        BlendMode.srcIn,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
         ),
-
-        SizedBox(height: 12.h),
-
+        SizedBox(height: 16.h),
         // Vertical list of cards
-        ListView.separated(
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          padding: EdgeInsets.zero,
-          itemCount: _items.length,
-          separatorBuilder: (_, __) => SizedBox(height: 16.h),
-          itemBuilder: (context, index) {
-            return GestureDetector(
-              onTap: () => context.push('/part-details'),
-              child: HomePartCardVertical(item: _items[index]),
+        Column(
+          children: items.map((item) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: 12.h),
+              child: HomePartCardVertical(
+                item: item,
+                onTap: () => context.push('/part-details/${item.id}'),
+              ),
             );
-          },
+          }).toList(),
         ),
       ],
     );

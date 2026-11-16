@@ -1,6 +1,12 @@
+import 'dart:async';
+
 import 'package:auto_hub_app/core/constants/app_icons.dart';
 import 'package:auto_hub_app/core/theme/app_colors.dart';
 import 'package:auto_hub_app/core/theme/app_text_styles.dart';
+import 'package:auto_hub_app/core/widgets/app_image.dart';
+import 'package:auto_hub_app/features/browse/domain/models/product_part_item.dart';
+import 'package:auto_hub_app/features/browse/domain/repositories/browse_repository.dart';
+import 'package:auto_hub_app/injection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -8,7 +14,9 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class PartDetailsPage extends StatefulWidget {
-  const PartDetailsPage({super.key});
+  const PartDetailsPage({required this.partId, super.key});
+
+  final String partId;
 
   @override
   State<PartDetailsPage> createState() => _PartDetailsPageState();
@@ -16,93 +24,75 @@ class PartDetailsPage extends StatefulWidget {
 
 class _PartDetailsPageState extends State<PartDetailsPage> {
   int _currentTabIndex = 0;
+  late final BrowseRepository _repository;
 
-  static const List<_DetailsRowData> _specRows = [
-    _DetailsRowData(
-      icon: AppIcons.confirmationNumber,
-      label: 'Part Number',
-      value: 'ALT-8912-HON',
-    ),
-    _DetailsRowData(
-      icon: AppIcons.category,
-      label: 'Category',
-      value: 'Electrical',
-    ),
-    _DetailsRowData(
-      icon: AppIcons.directionsCar, 
-      label: 'Compatible Make',
-      value: 'Honda',
-    ),
-    _DetailsRowData(
-      icon: AppIcons.precisionManufacturing,
-      label: 'Compatible Model',
-      value: 'Civic',
-    ),
-    _DetailsRowData(
-      icon: AppIcons.calendarMonth,
-      label: 'Year Range',
-      value: '2016-2021',
-    ),
-    _DetailsRowData(
-      icon: AppIcons.speed,
-      label: 'Donor Mileage',
-      value: '48,000 mi',
-    ),
-    _DetailsRowData(
-      icon: AppIcons.scale,
-      label: 'Weight',
-      value: '4.2 kg',
-    ),
-    _DetailsRowData(
-      icon: AppIcons.verifiedUser,
-      label: 'Warranty',
-      value: '90 Days',
-    ),
-  ];
+  Map<String, dynamic>? _detail;
+  List<ProductPartItem> _similarParts = const [];
+  bool _isLoading = true;
+  bool _hasError = false;
 
-  static const List<_DetailsRowData> _yardRows = [
-    _DetailsRowData(
-      icon: AppIcons.warehouse,
-      label: 'Yard Name',
-      value: 'Houston Auto Recyclers',
-    ),
-    _DetailsRowData(
-      icon: AppIcons.starBorder,
-      label: 'Yard Rating',
-      value: '4.8 (94)',
-    ),
-    _DetailsRowData(
-      icon: AppIcons.locationOn,
-      label: 'Address',
-      value: 'Houston, TX',
-    ),
-    _DetailsRowData(
-      icon: AppIcons.call,
-      label: 'Contact',
-      value: '(832) 555-0142',
-    ),
-    _DetailsRowData(
-      icon: AppIcons.schedule,
-      
-      label: 'Business Hours',
-      value: 'Mon-Sat 8AM-6PM',
-    ),
-    _DetailsRowData(
-      icon: AppIcons.localShipping,
-      label: 'Pickup',
-      value: 'Available',
-    ),
-    _DetailsRowData(
-      icon: AppIcons.deliveryDining,
-      label: 'Delivery',
-      value: 'Nationwide',
-    ),
-    _DetailsRowData(
-      icon: AppIcons.verified,
-      label: 'Verified Seller',
-      value: 'Yes',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _repository = getIt<BrowseRepository>();
+    unawaited(_load());
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+    try {
+      final detail = await _repository.getPartDetail(widget.partId);
+      final similar = await _repository.getSimilarParts(widget.partId);
+      if (!mounted) return;
+      setState(() {
+        _detail = detail;
+        _similarParts = similar;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
+  }
+
+  Map<String, dynamic> get _specs =>
+      (_detail?['specifications'] as Map<String, dynamic>?) ?? {};
+
+  Map<String, dynamic> get _yard =>
+      (_detail?['yard'] as Map<String, dynamic>?) ?? {};
+
+  double get _rating {
+    final raw = _detail?['rating'];
+    return (raw is num) ? raw.toDouble() : 0.0;
+  }
+
+  int get _ratingCount {
+    final raw = _detail?['ratingCount'];
+    return (raw is num) ? raw.toInt() : 0;
+  }
+
+  double get _price {
+    final raw = _detail?['price'];
+    if (raw is num) return raw.toDouble();
+    if (raw is String) return double.tryParse(raw) ?? 0;
+    return 0;
+  }
+
+  String get _title => _detail?['title'] as String? ?? '';
+  String get _location => _detail?['location'] as String? ?? '';
+  String get _partNumber => _detail?['partNumber'] as String? ?? '';
+  String get _condition => _detail?['condition'] as String? ?? 'Good';
+  String get _warranty => _detail?['warranty'] as String? ?? '30 Days';
+  String get _category => _specs['category'] as String? ?? '';
+  String get _yearRange => _specs['yearRange'] as String? ?? '';
+  String get _tag => _detail?['tag'] as String? ?? '';
+  String get _imageUrl => _detail?['imageUrl'] as String? ?? '';
 
   void _switchTab(int index) {
     if (_currentTabIndex == index) {
@@ -121,69 +111,243 @@ class _PartDetailsPageState extends State<PartDetailsPage> {
         backgroundColor: AppColors.onboardingBackground,
         body: SafeArea(
           bottom: false,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                _buildHeroSection(context),
-                Transform.translate(
-                  offset: Offset(0, -32.h),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20.w),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildTitleBlock(),
-                        SizedBox(height: 19.h),
-                        _buildQuickFactsCard(),
-                        SizedBox(height: 21.h),
-                        _buildFitsCard(),
-                        SizedBox(height: 19.h),
-                        _DetailsToggleTab(
-                          currentIndex: _currentTabIndex,
-                          onSpecificationsTap: () => _switchTab(0),
-                          onYardInfoTap: () => _switchTab(1),
-                        ),
-                        SizedBox(height: 16.h),
-                        AnimatedSize(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 300),
-                            switchInCurve: Curves.easeOut,
-                            switchOutCurve: Curves.easeIn,
-                            transitionBuilder: (child, animation) {
-                              return FadeTransition(
-                                opacity: animation,
-                                child: child,
-                              );
-                            },
-                            child: _currentTabIndex == 0
-                                ? const _DetailsCard(
-                                    key: ValueKey<String>(
-                                      'specifications',
-                                    ),
-                                    rows: _specRows,
-                                  )
-                                : const _DetailsCard(
-                                    key: ValueKey<String>('yard-info'),
-                                    rows: _yardRows,
-                                  ),
-                          ),
-                        ),
-                        SizedBox(height: 19.h),
-                        _buildDescriptionCard(),
-                        SizedBox(height: 20.h),
-                        _buildSimilarPartsSection(),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          child: _isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(),
+                )
+              : _hasError || _detail == null
+                  ? _buildErrorState(context)
+                  : _buildContent(context),
         ),
       ),
     );
+  }
+
+  Widget _buildErrorState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(32.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              AppIcons.warningAmber,
+              size: 48,
+              color: AppColors.error,
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              'Could not load part details',
+              style: AppTextStyles.titleMedium.copyWith(
+                color: AppColors.onboardingTextPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'This part may no longer be available. Please try again.',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.onboardingTextSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 20.h),
+            _HeroActionButton(
+              onTap: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/');
+                }
+              },
+              child: const Icon(AppIcons.arrowLeft, color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _buildHeroSection(context),
+          Transform.translate(
+            offset: Offset(0, -32.h),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTitleBlock(),
+                  SizedBox(height: 19.h),
+                  _buildQuickFactsCard(),
+                  SizedBox(height: 21.h),
+                  _buildFitsCard(),
+                  SizedBox(height: 19.h),
+                  _DetailsToggleTab(
+                    currentIndex: _currentTabIndex,
+                    onSpecificationsTap: () => _switchTab(0),
+                    onYardInfoTap: () => _switchTab(1),
+                  ),
+                  SizedBox(height: 16.h),
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: child,
+                        );
+                      },
+                      child: _currentTabIndex == 0
+                          ? _DetailsCard(
+                              key: const ValueKey<String>('specifications'),
+                              rows: _buildSpecRows(),
+                            )
+                          : _DetailsCard(
+                              key: const ValueKey<String>('yard-info'),
+                              rows: _buildYardRows(),
+                            ),
+                    ),
+                  ),
+                  SizedBox(height: 19.h),
+                  _buildDescriptionCard(),
+                  SizedBox(height: 20.h),
+                  _buildSimilarPartsSection(),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<_DetailsRowData> _buildSpecRows() {
+    final rows = <_DetailsRowData>[
+      _DetailsRowData(
+        icon: AppIcons.confirmationNumber,
+        label: 'Part Number',
+        value: _partNumber,
+      ),
+      _DetailsRowData(
+        icon: AppIcons.category,
+        label: 'Category',
+        value: _category,
+      ),
+      _DetailsRowData(
+        icon: AppIcons.directionsCar,
+        label: 'Compatible Make',
+        value: _specs['compatibleMake'] as String? ?? '',
+      ),
+      _DetailsRowData(
+        icon: AppIcons.precisionManufacturing,
+        label: 'Compatible Model',
+        value: _specs['compatibleModel'] as String? ?? '',
+      ),
+      _DetailsRowData(
+        icon: AppIcons.calendarMonth,
+        label: 'Year Range',
+        value: _yearRange,
+      ),
+    ];
+
+    final mileage = _specs['donorMileage'];
+    if (mileage is String && mileage.isNotEmpty) {
+      rows.add(
+        _DetailsRowData(
+          icon: AppIcons.speed,
+          label: 'Donor Mileage',
+          value: mileage,
+        ),
+      );
+    }
+
+    final weight = _specs['weight'];
+    if (weight is String && weight.isNotEmpty) {
+      rows.add(
+        _DetailsRowData(
+          icon: AppIcons.scale,
+          label: 'Weight',
+          value: weight,
+        ),
+      );
+    }
+
+    rows.add(
+      _DetailsRowData(
+        icon: AppIcons.verifiedUser,
+        label: 'Warranty',
+        value: _warranty,
+      ),
+    );
+
+    return rows;
+  }
+
+  List<_DetailsRowData> _buildYardRows() {
+    final rating = _yard['rating'];
+    final ratingCount = _yard['ratingCount'];
+    final ratingValue = (rating is num) ? rating.toDouble() : 0.0;
+    final ratingCountValue = (ratingCount is num) ? ratingCount.toInt() : 0;
+    final ratingDisplay = ratingValue > 0
+        ? '${ratingValue.toStringAsFixed(1)}'
+            '${ratingCountValue > 0 ? ' ($ratingCountValue)' : ''}'
+        : 'Not rated';
+
+    final pickupAvailable = _yard['pickupAvailable'] as bool? ?? true;
+    final deliveryNationwide = _yard['deliveryNationwide'] as bool? ?? false;
+    final isVerified = _yard['isVerified'] as bool? ?? false;
+
+    return [
+      _DetailsRowData(
+        icon: AppIcons.warehouse,
+        label: 'Yard Name',
+        value: _yard['name'] as String? ?? '',
+      ),
+      _DetailsRowData(
+        icon: AppIcons.starBorder,
+        label: 'Yard Rating',
+        value: ratingDisplay,
+      ),
+      _DetailsRowData(
+        icon: AppIcons.locationOn,
+        label: 'Address',
+        value: _yard['address'] as String? ?? _location,
+      ),
+      _DetailsRowData(
+        icon: AppIcons.call,
+        label: 'Contact',
+        value: _yard['phone'] as String? ?? '-',
+      ),
+      _DetailsRowData(
+        icon: AppIcons.schedule,
+        label: 'Business Hours',
+        value: _yard['businessHours'] as String? ?? '-',
+      ),
+      _DetailsRowData(
+        icon: AppIcons.localShipping,
+        label: 'Pickup',
+        value: pickupAvailable ? 'Available' : 'Unavailable',
+      ),
+      _DetailsRowData(
+        icon: AppIcons.deliveryDining,
+        label: 'Delivery',
+        value: deliveryNationwide ? 'Nationwide' : 'Local',
+      ),
+      _DetailsRowData(
+        icon: AppIcons.verified,
+        label: 'Verified Seller',
+        value: isVerified ? 'Yes' : 'No',
+      ),
+    ];
   }
 
   Widget _buildHeroSection(BuildContext context) {
@@ -193,8 +357,8 @@ class _PartDetailsPageState extends State<PartDetailsPage> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            'assets/images/home_part_engine.png',
+          AppImage(
+            imagePath: _imageUrl,
             fit: BoxFit.cover,
           ),
           Container(
@@ -226,9 +390,7 @@ class _PartDetailsPageState extends State<PartDetailsPage> {
                       context.go('/');
                     }
                   },
-                  child: const Icon(
-                    AppIcons.arrowLeft
-                  )
+                  child: const Icon(AppIcons.arrowLeft),
                 ),
                 Row(
                   children: [
@@ -236,7 +398,6 @@ class _PartDetailsPageState extends State<PartDetailsPage> {
                       onTap: () {},
                       child: Icon(
                         AppIcons.share,
-                        
                         size: 16.sp,
                         color: Colors.white,
                       ),
@@ -244,41 +405,40 @@ class _PartDetailsPageState extends State<PartDetailsPage> {
                     SizedBox(width: 8.w),
                     _HeroActionButton(
                       onTap: () {},
-                      child: const Icon(
-                        AppIcons.heart,
-                      ),
+                      child: const Icon(AppIcons.heart),
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          Positioned(
-            left: 16.w,
-            top: 220.h,
-            child: Container(
-              width: 72.w,
-              height: 38.h,
-              decoration: BoxDecoration(
-                color: AppColors.onboardingCyan.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(16.r),
-                border: Border.all(
-                  color: AppColors.onboardingCyan.withValues(alpha: 0.3),
-                  width: 0.8,
+          if (_tag.isNotEmpty)
+            Positioned(
+              left: 16.w,
+              top: 220.h,
+              child: Container(
+                width: 72.w,
+                height: 38.h,
+                decoration: BoxDecoration(
+                  color: AppColors.onboardingCyan.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(16.r),
+                  border: Border.all(
+                    color: AppColors.onboardingCyan.withValues(alpha: 0.3),
+                    width: 0.8,
+                  ),
                 ),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                'Featured',
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.onboardingCyan,
-                  fontSize: 10.sp,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
+                alignment: Alignment.center,
+                child: Text(
+                  _tag,
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.onboardingCyan,
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -296,7 +456,7 @@ class _PartDetailsPageState extends State<PartDetailsPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'OEM Alternator',
+                    _title,
                     style: AppTextStyles.headlineLarge.copyWith(
                       color: AppColors.onboardingTextPrimary,
                       fontSize: 22.sp,
@@ -308,22 +468,24 @@ class _PartDetailsPageState extends State<PartDetailsPage> {
                   SizedBox(height: 6.h),
                   _MetaLine(
                     iconPath: AppIcons.mapPin,
-                    text: 'Houston, TX',
+                    text: _location,
                     textStyle: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.onboardingTextSecondary,
                       fontSize: 12.sp,
                     ),
                   ),
-                  SizedBox(height: 4.h),
-                  _MetaLine(
-                    iconPath: AppIcons.tag,
-                    text: 'ALT-8912-HON',
-                    textStyle: GoogleFonts.cousine(
-                      color:   AppColors.textTertiary,
-                      fontSize: 11.sp,
-                      height: 1.5,
+                  if (_partNumber.isNotEmpty) ...[
+                    SizedBox(height: 4.h),
+                    _MetaLine(
+                      iconPath: AppIcons.tag,
+                      text: _partNumber,
+                      textStyle: GoogleFonts.cousine(
+                        color: AppColors.textTertiary,
+                        fontSize: 11.sp,
+                        height: 1.5,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -341,7 +503,7 @@ class _PartDetailsPageState extends State<PartDetailsPage> {
               ),
               alignment: Alignment.center,
               child: Text(
-                'Excellent',
+                _condition,
                 style: AppTextStyles.labelSmall.copyWith(
                   color: AppColors.onboardingGreen,
                   fontSize: 11.sp,
@@ -357,69 +519,69 @@ class _PartDetailsPageState extends State<PartDetailsPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  r'$185',
-                  style: AppTextStyles.headlineLarge.copyWith(
-                    color: AppColors.onboardingTextPrimary,
-                    fontSize: 30.sp,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -1,
-                    height: 1,
-                  ),
-                ),
-                SizedBox(height: 3.h),
-                Text(
-                  'Warranty: 90 Days',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color:   AppColors.textTertiary,
-                    fontSize: 11.sp,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
-            Container(
-              width: 110.w,
-              height: 42.h,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFBBF24).withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(16.r),
-                border: Border.all(
-                  color: const Color(0xFFFBBF24).withValues(alpha: 0.15),
-                  width: 0.8,
-                ),
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 14.w),
-              child: Row(
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    AppIcons.star,
-          
-                  ),
-                  SizedBox(width: 8.w),
                   Text(
-                    '4.8',
-                    style: AppTextStyles.titleLarge.copyWith(
-                      color: const Color(0xFFFBBF24),
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w800,
+                    '\$${_price.toStringAsFixed(0)}',
+                    style: AppTextStyles.headlineLarge.copyWith(
+                      color: AppColors.onboardingTextPrimary,
+                      fontSize: 30.sp,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -1,
                       height: 1,
                     ),
                   ),
-                  SizedBox(width: 8.w),
+                  SizedBox(height: 3.h),
                   Text(
-                    '(94)',
+                    'Warranty: $_warranty',
                     style: AppTextStyles.bodySmall.copyWith(
-                      color:   AppColors.textTertiary,
-                      fontSize: 12.sp,
+                      color: AppColors.textTertiary,
+                      fontSize: 11.sp,
+                      height: 1.5,
                     ),
                   ),
                 ],
               ),
             ),
+            if (_rating > 0 || _ratingCount > 0)
+              Container(
+                width: 110.w,
+                height: 42.h,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFBBF24).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(16.r),
+                  border: Border.all(
+                    color: const Color(0xFFFBBF24).withValues(alpha: 0.15),
+                    width: 0.8,
+                  ),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 14.w),
+                child: Row(
+                  children: [
+                    const Icon(AppIcons.star),
+                    SizedBox(width: 8.w),
+                    Text(
+                      _rating.toStringAsFixed(1),
+                      style: AppTextStyles.titleLarge.copyWith(
+                        color: const Color(0xFFFBBF24),
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    Text(
+                      '($_ratingCount)',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textTertiary,
+                        fontSize: 12.sp,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ],
@@ -445,22 +607,22 @@ class _PartDetailsPageState extends State<PartDetailsPage> {
         ],
       ),
       padding: EdgeInsets.symmetric(horizontal: 16.8.w, vertical: 16.8.h),
-      child: const Row(
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _QuickFactItem(
             icon: AppIcons.electricalServices,
-            value: 'Electrical',
+            value: _category,
             label: 'Category',
           ),
           _QuickFactItem(
             icon: AppIcons.calendarToday,
-            value: '2016-2021',
+            value: _yearRange,
             label: 'Years',
           ),
           _QuickFactItem(
             icon: AppIcons.shield,
-            value: '90 Days',
+            value: _warranty,
             label: 'Warranty',
           ),
         ],
@@ -469,6 +631,10 @@ class _PartDetailsPageState extends State<PartDetailsPage> {
   }
 
   Widget _buildFitsCard() {
+    final fitment = (_detail?['fitment'] as Map<String, dynamic>?) ?? {};
+    final label = fitment['label'] as String? ?? 'Fits: $_title';
+    final detail = fitment['detail'] as String? ?? '';
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -494,22 +660,24 @@ class _PartDetailsPageState extends State<PartDetailsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Fits: Honda Civic',
+                  label,
                   style: AppTextStyles.labelLarge.copyWith(
                     color: AppColors.onboardingTextPrimary,
                     fontSize: 12.sp,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                SizedBox(height: 1.h),
-                Text(
-                  'Model years 2016-2021 · Donor mileage: 48,000 mi',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.onboardingTextSecondary,
-                    fontSize: 11.sp,
-                    height: 1.5,
+                if (detail.isNotEmpty) ...[
+                  SizedBox(height: 1.h),
+                  Text(
+                    detail,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.onboardingTextSecondary,
+                      fontSize: 11.sp,
+                      height: 1.5,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -519,9 +687,9 @@ class _PartDetailsPageState extends State<PartDetailsPage> {
   }
 
   Widget _buildDescriptionCard() {
+    final description = _detail?['description'] as String? ?? '';
     return Container(
       width: double.infinity,
-      height: 162.h,
       decoration: BoxDecoration(
         color: AppColors.onboardingSurfaceLight,
         borderRadius: BorderRadius.circular(24.r),
@@ -551,9 +719,7 @@ class _PartDetailsPageState extends State<PartDetailsPage> {
           ),
           SizedBox(height: 9.h),
           Text(
-            'OEM alternator pulled from a 2019 Honda Civic with only 48K miles '
-            'on the donor vehicle. Tested and confirmed working at charging '
-            'specification.',
+            description.isEmpty ? 'No description available.' : description,
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.bodySmall.copyWith(
@@ -562,7 +728,7 @@ class _PartDetailsPageState extends State<PartDetailsPage> {
               height: 1.8,
             ),
           ),
-          const Spacer(),
+          SizedBox(height: 16.h),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -575,10 +741,7 @@ class _PartDetailsPageState extends State<PartDetailsPage> {
                 ),
               ),
               SizedBox(width: 2.w),
-              const Icon(
-                AppIcons.chevronRight,
-               
-              ),
+              const Icon(AppIcons.chevronRight),
             ],
           ),
         ],
@@ -601,98 +764,135 @@ class _PartDetailsPageState extends State<PartDetailsPage> {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            Row(
-              children: [
-                Text(
-                  'See all',
-                  style: AppTextStyles.labelLarge.copyWith(
-                    color: AppColors.onboardingCyan,
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                SizedBox(width: 2.w),
-                const Icon(
-                  AppIcons.arrowUpRight,
-                  
-                ),
-              ],
+            Text(
+              'See all',
+              style: AppTextStyles.labelLarge.copyWith(
+                color: AppColors.onboardingCyan,
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
         SizedBox(height: 12.h),
-        Container(
-          width: 174.w,
-          decoration: BoxDecoration(
-            color: AppColors.onboardingSurfaceLight,
-            borderRadius: BorderRadius.circular(16.r),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.07),
-              width: 0.8,
+        if (_similarParts.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(16.r),
+            decoration: BoxDecoration(
+              color: AppColors.onboardingSurfaceLight,
+              borderRadius: BorderRadius.circular(16.r),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.07),
+                width: 0.8,
+              ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 12.r,
-                offset: Offset(0, 2.h),
+            child: Text(
+              'No similar parts available.',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.onboardingTextSecondary,
               ),
-            ],
+            ),
+          )
+        else
+          SizedBox(
+            height: 220.h,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _similarParts.length,
+              separatorBuilder: (_, __) => SizedBox(width: 12.w),
+              itemBuilder: (context, index) {
+                final part = _similarParts[index];
+                return GestureDetector(
+                  onTap: () =>
+                      context.push('/part-details/${part.id}'),
+                  child: _SimilarPartCard(part: part),
+                );
+              },
+            ),
           ),
-          clipBehavior: Clip.hardEdge,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 172.w,
-                height: 100.h,
-                child: Image.asset(
-                  'assets/images/home_part_headlight.png',
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(10.w, 10.h, 10.w, 10.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'LED Headlight Assembly - Left',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.labelLarge.copyWith(
-                        color: AppColors.onboardingTextPrimary,
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w700,
-                        height: 1.3,
-                      ),
-                    ),
-                    SizedBox(height: 2.h),
-                    Text(
-                      'Toyota Camry',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color:  AppColors.textTertiary,
-                        fontSize: 10.sp,
-                        height: 1.5,
-                      ),
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      r'$275',
-                      style: AppTextStyles.titleMedium.copyWith(
-                        color: AppColors.onboardingCyan,
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
         SizedBox(height: 40.h),
       ],
+    );
+  }
+}
+
+class _SimilarPartCard extends StatelessWidget {
+  const _SimilarPartCard({required this.part});
+
+  final ProductPartItem part;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 174.w,
+      decoration: BoxDecoration(
+        color: AppColors.onboardingSurfaceLight,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.07),
+          width: 0.8,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 12.r,
+            offset: Offset(0, 2.h),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 172.w,
+            height: 100.h,
+            child: AppImage(
+              imagePath: part.imagePath,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(10.w, 10.h, 10.w, 10.h),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  part.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: AppColors.onboardingTextPrimary,
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w700,
+                    height: 1.3,
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  '${part.make} ${part.model}',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textTertiary,
+                    fontSize: 10.sp,
+                    height: 1.5,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  r'$${part.price.toStringAsFixed(0)}',
+                  style: AppTextStyles.titleMedium.copyWith(
+                    color: AppColors.onboardingCyan,
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -747,11 +947,11 @@ class _MetaLine extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(
-          iconPath,
-        ),
+        Icon(iconPath),
         SizedBox(width: 6.w),
-        Text(text, style: textStyle),
+        Expanded(
+          child: Text(text, style: textStyle),
+        ),
       ],
     );
   }
@@ -801,7 +1001,7 @@ class _QuickFactItem extends StatelessWidget {
           Text(
             label,
             style: AppTextStyles.bodySmall.copyWith(
-              color:   AppColors.textTertiary,
+              color: AppColors.textTertiary,
               fontSize: 10.sp,
             ),
           ),
@@ -876,7 +1076,7 @@ class _DetailsToggleTab extends StatelessWidget {
                           style: AppTextStyles.labelLarge.copyWith(
                             color: currentIndex == 0
                                 ? Colors.white
-                                :   AppColors.textTertiary,
+                                : AppColors.textTertiary,
                             fontSize: 13.sp,
                             fontWeight: FontWeight.w700,
                           ),
@@ -896,7 +1096,7 @@ class _DetailsToggleTab extends StatelessWidget {
                           style: AppTextStyles.labelLarge.copyWith(
                             color: currentIndex == 1
                                 ? Colors.white
-                                :   AppColors.textTertiary,
+                                : AppColors.textTertiary,
                             fontSize: 13.sp,
                             fontWeight: FontWeight.w700,
                           ),

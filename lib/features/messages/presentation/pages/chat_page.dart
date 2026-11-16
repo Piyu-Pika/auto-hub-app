@@ -25,65 +25,47 @@ class _ChatPageState extends State<ChatPage> {
   late final MessagesRepository _repository;
   LiveChatConversation? _roomInfo;
   List<ChatMessage> _messages = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _repository = MessagesRepository();
     _loadMessages();
+    _repository.markRoomAsRead(widget.chatRoomId);
   }
 
-  void _loadMessages() {
-    setState(() {
-      _roomInfo = _repository.getConversationById(widget.chatRoomId);
-      _messages = _repository.getMessages(widget.chatRoomId);
-    });
+  Future<void> _loadMessages() async {
+    setState(() => _isLoading = true);
+    final room = await _repository.fetchConversationById(widget.chatRoomId);
+    final msgs = await _repository.fetchMessages(widget.chatRoomId);
+    if (mounted) {
+      setState(() {
+        _roomInfo = room ?? _repository.getConversationById(widget.chatRoomId);
+        _messages = msgs;
+        _isLoading = false;
+      });
+    }
   }
 
-  void _sendMessage(String text) {
+  Future<void> _sendMessage(String text) async {
     final newMsg = ChatMessage(
       text: text,
       time: _formatCurrentTime(),
       isSender: true,
       isSent: false,
     );
-    _repository.sendMessage(widget.chatRoomId, newMsg);
-    _loadMessages();
-
-    // Simulate reactive reply after 1.5 seconds
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (!mounted) return;
-
-      setState(() {
-        // Find message to mark sent
-        final msgs = _repository.getMessages(widget.chatRoomId);
-        final lastIdx = msgs.indexWhere((m) => m.isSender && !m.isSent);
-        if (lastIdx != -1) {
-          _repository.updateMessage(
-            widget.chatRoomId,
-            lastIdx,
-            ChatMessage(
-              text: msgs[lastIdx].text,
-              time: msgs[lastIdx].time,
-              isSender: true,
-            ),
-          );
-        }
-
-        // Auto reply with time evaluated AFTER mounted check
-        _repository.sendMessage(
-          widget.chatRoomId,
-          ChatMessage(
-            text:
-                'Thanks for your message! An agent will look into this and reply soon.',
-            time: _formatCurrentTime(),
-            isSender: false,
-          ),
-        );
-
-        _loadMessages();
-      });
+    setState(() {
+      _messages.insert(0, newMsg);
     });
+
+    await _repository.sendMessage(widget.chatRoomId, newMsg);
+    final updatedMsgs = await _repository.fetchMessages(widget.chatRoomId);
+    if (mounted) {
+      setState(() {
+        _messages = updatedMsgs;
+      });
+    }
   }
 
   String _formatCurrentTime() {
@@ -144,19 +126,36 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_roomInfo == null) {
+    if (_isLoading && _roomInfo == null) {
       return const Scaffold(
         backgroundColor: AppColors.onboardingBackground,
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(
+              AppColors.onboardingCyan,
+            ),
+          ),
+        ),
       );
     }
+
+    final roomInfo = _roomInfo ??
+        LiveChatConversation(
+          name: 'Chat Support',
+          lastMessage: '',
+          time: '',
+          initials: 'CS',
+          avatarColor: const Color(0xFF0DA0CE),
+          chatRoomId: widget.chatRoomId,
+          isOnline: true,
+        );
 
     return Scaffold(
       backgroundColor: AppColors.onboardingBackground,
       body: SafeArea(
         child: Column(
           children: [
-            _buildAppBar(context, _roomInfo!),
+            _buildAppBar(context, roomInfo),
             Expanded(
               child: _messages.isEmpty
                   ? _buildEmptyState()

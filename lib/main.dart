@@ -1,3 +1,4 @@
+import 'package:auto_hub_app/core/network/token_storage.dart';
 import 'package:auto_hub_app/core/router/app_router.dart';
 import 'package:auto_hub_app/core/theme/app_theme.dart';
 import 'package:auto_hub_app/injection.dart';
@@ -46,6 +47,12 @@ Future<void> main() async {
 
   // Initialise dependency injection.
   configureDependencies();
+
+  // Ensure persisted auth session is restored into memory before the app runs.
+  final tokenStorage = getIt<TokenStorage>();
+  if (tokenStorage is InMemoryTokenStorage) {
+    await tokenStorage.ensureInitialized();
+  }
 
   // Set up BLoC observer for debugging.
   Bloc.observer = AppBlocObserver();

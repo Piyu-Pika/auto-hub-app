@@ -41,9 +41,11 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const MainShell(),
     ),
     GoRoute(
-      path: '/part-details',
+      path: '/part-details/:id',
       name: 'part-details',
-      builder: (context, state) => const PartDetailsPage(),
+      builder: (context, state) => PartDetailsPage(
+        partId: state.pathParameters['id'] ?? '',
+      ),
     ),
     GoRoute(
       path: '/onboarding',

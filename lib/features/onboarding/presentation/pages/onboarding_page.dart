@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:auto_hub_app/core/network/token_storage.dart';
 import 'package:auto_hub_app/core/theme/app_text_styles.dart';
+import 'package:auto_hub_app/injection.dart';
 import 'package:auto_hub_app/features/onboarding/presentation/widgets/onboarding_bottom_nav.dart';
 import 'package:auto_hub_app/features/onboarding/presentation/widgets/quality_parts_view.dart';
 import 'package:auto_hub_app/features/onboarding/presentation/widgets/smart_vin_view.dart';
@@ -46,8 +48,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   void _finishOnboarding() {
-    // Navigate away when onboarding is done
-    // TODO(autohub): Update shared prefs / persistent storage in the future
+    unawaited(getIt<TokenStorage>().setHasSeenOnboarding(seen: true));
     context.goNamed('login');
   }
 

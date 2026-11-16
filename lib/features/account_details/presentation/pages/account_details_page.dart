@@ -22,9 +22,9 @@ class _AccountDetailsPageState extends State<AccountDetailsPage> {
   bool _isLoading = true;
 
   @override
-  Future<void> initState() async {
+  void initState() {
     super.initState();
-    await _loadProfile();
+    _loadProfile();
   }
 
   Future<void> _loadProfile() async {

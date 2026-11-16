@@ -134,6 +134,8 @@ class MockBrowseRepository implements BrowseRepository {
     List<String>? categories,
     List<String>? conditions,
     double? maxPrice,
+    int page = 1,
+    int limit = 20,
   }) async {
     var filtered = _mockParts.where((part) {
       if (makes != null && makes.isNotEmpty && !makes.contains('All Makes')) {
@@ -160,17 +162,97 @@ class MockBrowseRepository implements BrowseRepository {
       }).toList();
     }
 
-    return filtered;
+    final startIndex = (page - 1) * limit;
+    if (startIndex >= filtered.length) {
+      return [];
+    }
+    final endIndex = (startIndex + limit > filtered.length)
+        ? filtered.length
+        : startIndex + limit;
+    return filtered.sublist(startIndex, endIndex);
   }
 
   @override
-  Future<List<ProductPartItem>> searchByVin(String vin) async {
+  Future<List<ProductPartItem>> searchByVin(
+    String vin, {
+    int page = 1,
+    int limit = 20,
+  }) async {
     if (vin.length < 17 || vin == '145454HASBJH7W27E') {
       return [];
     }
-    return _mockParts
+    final filtered = _mockParts
         .where((part) => part.make == 'Honda' || part.make == 'Ford')
         .toList();
+
+    final startIndex = (page - 1) * limit;
+    if (startIndex >= filtered.length) {
+      return [];
+    }
+    final endIndex = (startIndex + limit > filtered.length)
+        ? filtered.length
+        : startIndex + limit;
+    return filtered.sublist(startIndex, endIndex);
+  }
+
+  @override
+  Future<Map<String, dynamic>> getPartDetail(String id) async {
+    final part = _mockParts.where((p) => p.id == id).firstOrNull;
+    if (part == null) {
+      throw Exception('Part not found');
+    }
+    return {
+      'id': part.id,
+      'title': part.title,
+      'subtitle': part.category,
+      'description': '${part.title} pulled from a donor vehicle, tested and '
+          'confirmed working. ${part.condition} condition with ${part.warranty} '
+          'warranty.',
+      'price': part.price,
+      'condition': part.condition,
+      'tag': part.tag,
+      'imageUrl': part.imagePath,
+      'rating': part.rating,
+      'ratingCount': 94,
+      'warranty': part.warranty,
+      'isFavorite': part.isFavorite,
+      'location': part.location,
+      'partNumber': 'AUTO-${part.id}-HUB',
+      'quantityAvailable': 1,
+      'specifications': {
+        'category': part.category,
+        'compatibleMake': part.make,
+        'compatibleModel': part.model,
+        'yearRange': part.yearRange,
+        'donorMileage': '48,000 mi',
+        'weight': '4.2 kg',
+      },
+      'fitment': {
+        'label': 'Fits: ${part.make} ${part.model}',
+        'detail': 'Model years ${part.yearRange}',
+      },
+      'yard': {
+        'yardId': 'yrd_${part.id}',
+        'name': part.location,
+        'address': part.location,
+        'phone': '(832) 555-0142',
+        'businessHours': 'Mon-Sat 8AM-6PM',
+        'pickupAvailable': true,
+        'deliveryNationwide': true,
+        'isVerified': true,
+        'rating': part.rating,
+        'ratingCount': 94,
+      },
+    };
+  }
+
+  @override
+  Future<List<ProductPartItem>> getSimilarParts(
+    String id, {
+    int limit = 10,
+  }) async {
+    final otherParts = _mockParts.where((p) => p.id != id).toList();
+    return otherParts.take(limit).toList();
   }
 
   @override

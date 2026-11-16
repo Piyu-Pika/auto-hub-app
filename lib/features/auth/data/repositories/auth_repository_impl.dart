@@ -120,11 +120,19 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, UserEntity>> getSession() async {
     try {
+      if (!_tokenStorage.isAuthenticated) {
+        return const Left(UnauthorizedFailure(message: 'No active session.'));
+      }
       final user = await _remoteDatasource.getSession();
       return Right(user);
     } on UnauthorizedException catch (e) {
+      await _tokenStorage.clearTokens();
       return Left(UnauthorizedFailure(message: e.message));
     } on ServerException catch (e) {
+      if (e.statusCode == 401) {
+        await _tokenStorage.clearTokens();
+        return Left(UnauthorizedFailure(message: e.message));
+      }
       return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } on NetworkException catch (e) {
       return Left(NetworkFailure(message: e.message));

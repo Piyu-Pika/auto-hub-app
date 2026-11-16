@@ -19,6 +19,7 @@ class LiveChatPage extends StatefulWidget {
 class _LiveChatPageState extends State<LiveChatPage> {
   late final MessagesRepository _repository;
   List<LiveChatConversation> _conversations = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -27,16 +28,20 @@ class _LiveChatPageState extends State<LiveChatPage> {
     _loadConversations();
   }
 
-  void _loadConversations() {
-    setState(() {
-      _conversations = _repository.getConversations();
-    });
+  Future<void> _loadConversations() async {
+    setState(() => _isLoading = true);
+    final convos = await _repository.fetchConversations();
+    if (mounted) {
+      setState(() {
+        _conversations = convos;
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Refresh conversations in case they changed in another screen
     _loadConversations();
   }
 
@@ -63,9 +68,17 @@ class _LiveChatPageState extends State<LiveChatPage> {
               SizedBox(height: 12.h),
             ],
             Expanded(
-              child: _conversations.isEmpty
-                  ? _buildEmptyState()
-                  : _buildConversationsSection(context),
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.onboardingCyan,
+                        ),
+                      ),
+                    )
+                  : _conversations.isEmpty
+                      ? _buildEmptyState()
+                      : _buildConversationsSection(context),
             ),
           ],
         ),

@@ -1,5 +1,4 @@
 import 'package:auto_hub_app/features/browse/data/datasources/browse_remote_datasource.dart';
-import 'package:auto_hub_app/features/browse/data/repositories/mock_browse_repository.dart';
 import 'package:auto_hub_app/features/browse/domain/models/product_part_item.dart';
 import 'package:auto_hub_app/features/browse/domain/repositories/browse_repository.dart';
 import 'package:injectable/injectable.dart';
@@ -9,19 +8,14 @@ class BrowseRepositoryImpl implements BrowseRepository {
   BrowseRepositoryImpl(this._remoteDatasource);
 
   final BrowseRemoteDatasource _remoteDatasource;
-  final MockBrowseRepository _fallback = MockBrowseRepository();
 
   @override
   Future<List<ProductPartItem>> getParts() async {
     try {
       final response = await _remoteDatasource.getParts();
-      final items = response.data;
-      if (items != null && items.isNotEmpty) {
-        return items;
-      }
-      return await _fallback.getParts();
+      return response.data ?? [];
     } catch (_) {
-      return _fallback.getParts();
+      return [];
     }
   }
 
@@ -32,6 +26,8 @@ class BrowseRepositoryImpl implements BrowseRepository {
     List<String>? categories,
     List<String>? conditions,
     double? maxPrice,
+    int page = 1,
+    int limit = 20,
   }) async {
     try {
       final response = await _remoteDatasource.getParts(
@@ -40,49 +36,56 @@ class BrowseRepositoryImpl implements BrowseRepository {
         categories: categories,
         conditions: conditions,
         maxPrice: maxPrice,
+        page: page,
+        limit: limit,
       );
-      final items = response.data;
-      if (items != null && items.isNotEmpty) {
-        return items;
-      }
-      return await _fallback.searchParts(
-        query: query,
-        makes: makes,
-        categories: categories,
-        conditions: conditions,
-        maxPrice: maxPrice,
-      );
+      return response.data ?? [];
     } catch (_) {
-      return _fallback.searchParts(
-        query: query,
-        makes: makes,
-        categories: categories,
-        conditions: conditions,
-        maxPrice: maxPrice,
-      );
+      return [];
     }
   }
 
   @override
-  Future<List<ProductPartItem>> searchByVin(String vin) async {
+  Future<List<ProductPartItem>> searchByVin(
+    String vin, {
+    int page = 1,
+    int limit = 20,
+  }) async {
     try {
-      final response = await _remoteDatasource.getParts(vin: vin);
-      final items = response.data;
-      if (items != null && items.isNotEmpty) {
-        return items;
-      }
-      return await _fallback.searchByVin(vin);
+      final response = await _remoteDatasource.getParts(
+        vin: vin,
+        page: page,
+        limit: limit,
+      );
+      return response.data ?? [];
     } catch (_) {
-      return _fallback.searchByVin(vin);
+      return [];
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getPartDetail(String id) async {
+    try {
+      return await _remoteDatasource.getPartDetail(id);
+    } catch (_) {
+      return {};
+    }
+  }
+
+  @override
+  Future<List<ProductPartItem>> getSimilarParts(
+    String id, {
+    int limit = 10,
+  }) async {
+    try {
+      return await _remoteDatasource.getSimilarParts(id, limit: limit);
+    } catch (_) {
+      return [];
     }
   }
 
   @override
   Future<void> toggleFavorite(String partId) async {
-    try {
-      await _remoteDatasource.toggleFavorite(partId);
-    } catch (_) {
-      await _fallback.toggleFavorite(partId);
-    }
+    await _remoteDatasource.toggleFavorite(partId);
   }
 }

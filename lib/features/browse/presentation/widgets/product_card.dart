@@ -1,4 +1,5 @@
 import 'package:auto_hub_app/core/theme/app_colors.dart';
+import 'package:auto_hub_app/core/widgets/app_image.dart';
 import 'package:auto_hub_app/features/browse/domain/models/product_part_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -73,20 +74,9 @@ class ProductCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.asset(
-                    part.imagePath,
+                  AppImage(
+                    imagePath: part.imagePath,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: const Color(0xFF12161A),
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.image_not_supported_outlined,
-                          color: Color(0xFF8B929A),
-                          size: 40,
-                        ),
-                      );
-                    },
                   ),
                   // Dark Gradient Overlay
                   Container(
@@ -175,14 +165,19 @@ class ProductCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
-                          '\$${part.price.toStringAsFixed(0)}',
-                          style: GoogleFonts.inter(
-                            fontSize: 22.sp,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
+                        Flexible(
+                          child: Text(
+                            '\$${part.price.toStringAsFixed(0)}',
+                            style: GoogleFonts.inter(
+                              fontSize: 22.sp,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        SizedBox(width: 8.w),
                         Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: 10.w,
@@ -278,12 +273,16 @@ class ProductCard extends StatelessWidget {
                         ),
                       ),
                       SizedBox(width: 6.w),
-                      Text(
-                        '${part.make} ${part.model} (${part.yearRange})',
-                        style: GoogleFonts.inter(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w400,
-                          color: const Color(0xFF8B929A),
+                      Expanded(
+                        child: Text(
+                          '${part.make} ${part.model} (${part.yearRange})',
+                          style: GoogleFonts.inter(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w400,
+                            color: const Color(0xFF8B929A),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -352,12 +351,16 @@ class _DetailChip extends StatelessWidget {
             ),
           ),
           SizedBox(width: 4.w),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 10.sp,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF8B929A),
+          Flexible(
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 10.sp,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF8B929A),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

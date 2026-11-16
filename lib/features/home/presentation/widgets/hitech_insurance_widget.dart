@@ -1,6 +1,7 @@
 import 'package:auto_hub_app/core/network/api_endpoints.dart';
 import 'package:auto_hub_app/injection.dart';
 import 'package:dio/dio.dart';
+import 'package:auto_hub_app/core/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -88,10 +89,10 @@ class HiTechInsuranceWidget extends StatelessWidget {
                       : const Color(0x15000000),
                 ),
               ),
-              child: Image.network(
-                'https://hitechinsurance.ai/widget-mark.png',
+              child: AppImage(
+                imagePath: 'https://hitechinsurance.ai/widget-mark.png',
                 fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => const Icon(
+                errorWidget: const Icon(
                   Icons.shield,
                   color: Color(0xFFFF763C),
                   size: 22,

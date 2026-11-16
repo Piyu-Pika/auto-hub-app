@@ -59,9 +59,16 @@ class ProductPartItem {
     final rawRating = json['rating'];
     final rating = (rawRating is num) ? rawRating.toDouble() : 0.0;
 
-    final image = json['imagePath'] as String? ??
-        json['imageUrl'] as String? ??
-        'assets/images/home_part_bumper.png';
+    String? rawImage =
+        json['imagePath'] as String? ?? json['imageUrl'] as String?;
+    if ((rawImage == null || rawImage.trim().isEmpty) &&
+        json['images'] is List &&
+        (json['images'] as List).isNotEmpty) {
+      rawImage = (json['images'] as List).first?.toString();
+    }
+    final image = (rawImage != null && rawImage.trim().isNotEmpty)
+        ? rawImage.trim()
+        : 'assets/images/home_part_bumper.png';
 
     return ProductPartItem(
       id: json['id'] as String? ?? '',

@@ -1,11 +1,13 @@
 import 'package:auto_hub_app/core/constants/app_icons.dart';
 import 'package:auto_hub_app/core/theme/app_colors.dart';
 import 'package:auto_hub_app/core/theme/app_text_styles.dart';
+import 'package:auto_hub_app/features/request_junk/domain/repositories/junk_repository.dart';
 import 'package:auto_hub_app/features/request_junk/models/junk_models.dart';
 import 'package:auto_hub_app/features/request_junk/widgets/empty_requests_state.dart';
 import 'package:auto_hub_app/features/request_junk/widgets/filter_tabs.dart';
 import 'package:auto_hub_app/features/request_junk/widgets/request_item_card.dart';
 import 'package:auto_hub_app/features/request_junk/widgets/start_new_request_button.dart';
+import 'package:auto_hub_app/injection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -21,46 +23,33 @@ class MyRequestJunk extends StatefulWidget {
 
 class _MyRequestJunkState extends State<MyRequestJunk> {
   String _selectedTab = 'All';
+  List<JunkRequest> _allRequests = [];
+  bool _isLoading = true;
 
-  final List<JunkRequest> _allRequests = const [
-    JunkRequest(
-      id: 'JNK-0412',
-      status: JunkRequestStatus.pickupScheduled,
-      vehicleTitle: '2009 Honda Accord – Silver',
-      date: 'Mar 29, 2026',
-      vin: '1HGCP26889A039821',
-      condition: 'Non-running, minor body damage',
-      notes: 'Keys available. Located in driveway.',
-      salvageYardName: 'Houston Auto Salvage',
-      salvageYardPhone: '+1 (713) 555-0182',
-      offerAmount: 420,
-      pickupDateTime: 'Apr 3, 2026 · 9:00 AM - 12:00 PM',
-      towCompany: 'Houston Auto Salvage',
-    ),
-    JunkRequest(
-      id: 'JNK-0401',
-      status: JunkRequestStatus.offerPending,
-      vehicleTitle: '2012 Nissan Altima – Black',
-      date: 'Mar 31, 2026',
-      vin: '1N4AL2AP5CC174829',
-      condition: 'Running, 180K miles, transmission issues',
-      notes: 'Title in hand. Parked on street.',
-      salvageYardName: 'TX Auto Recyclers',
-      salvageYardPhone: '+1 (713) 555-0344',
-    ),
-    JunkRequest(
-      id: 'JNK-0389',
-      status: JunkRequestStatus.completed,
-      vehicleTitle: '2005 Toyota Camry – White',
-      date: 'Feb 14, 2026',
-      vin: '4T1BE30K85U638271',
-      condition: 'Non-running, engine seized',
-      notes: 'Picked up from parking lot.',
-      salvageYardName: 'Gulf Coast Salvage',
-      salvageYardPhone: '+1 (713) 555-0991',
-      offerAmount: 350,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadRequests();
+  }
+
+  Future<void> _loadRequests() async {
+    setState(() => _isLoading = true);
+    final repo = getIt<JunkRepository>();
+    final result = await repo.getJunkRequests();
+    if (mounted) {
+      result.fold(
+        (failure) => setState(() {
+          _allRequests = [];
+          _isLoading = false;
+        }),
+        (requests) => setState(() {
+          _allRequests = requests;
+          _isLoading = false;
+        }),
+      );
+    }
+  }
+     
 
   List<JunkRequest> get _filteredRequests {
     if (_selectedTab == 'All') {
@@ -110,7 +99,15 @@ class _MyRequestJunkState extends State<MyRequestJunk> {
             Expanded(
               child: Stack(
                 children: [
-                  if (requests.isEmpty)
+                  if (_isLoading)
+                    const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.onboardingCyan,
+                        ),
+                      ),
+                    )
+                  else if (requests.isEmpty)
                     const EmptyRequestsState()
                   else
                     _buildRequestsList(requests),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:auto_hub_app/core/constants/app_icons.dart';
 import 'package:auto_hub_app/core/theme/app_colors.dart';
 import 'package:auto_hub_app/core/theme/app_text_styles.dart';
@@ -56,7 +58,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   @override
-  Future<void> dispose() async {
+  void dispose() {
     _loginEmailController.removeListener(_updateLoginValidity);
     _loginPasswordController.removeListener(_updateLoginValidity);
     _signupNameController.removeListener(_updateSignupValidity);
@@ -67,7 +69,7 @@ class _AuthScreenState extends State<AuthScreen> {
     _signupNameController.dispose();
     _signupEmailController.dispose();
     _signupPasswordController.dispose();
-    await _authBloc.close();
+    unawaited(_authBloc.close());
     super.dispose();
   }
 

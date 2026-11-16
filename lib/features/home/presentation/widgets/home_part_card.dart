@@ -1,3 +1,4 @@
+import 'package:auto_hub_app/core/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -8,6 +9,7 @@ enum PartBadgeType { featured, hotDeal, certified, none }
 enum PartCondition { excellent, good }
 
 class PartItemData {
+  final String id;
   final String imagePath;
   final String title;
   final String subtitle;
@@ -20,6 +22,7 @@ class PartItemData {
   final PartCondition condition;
 
   const PartItemData({
+    required this.id,
     required this.imagePath,
     required this.title,
     required this.subtitle,
@@ -37,59 +40,22 @@ class PartItemData {
 class HomePartCardHorizontal extends StatelessWidget {
   final PartItemData item;
   final double width;
+  final VoidCallback? onTap;
 
   const HomePartCardHorizontal({
     super.key,
     required this.item,
     this.width = 284,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: width.w,
-      height: 248.h,
-      decoration: BoxDecoration(
-        color: const Color(0xFF161B22),
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(
-          color: const Color(0x12FFFFFF),
-          width: 0.8,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
-            blurRadius: 24,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.hardEdge,
-      child: Column(
-        children: [
-          // Image section
-          _PartImageSection(item: item, height: 150),
-          // Info section
-          Expanded(
-            child: _PartInfoSection(item: item),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Vertical card used in "Recent Listings" vertical list.
-class HomePartCardVertical extends StatelessWidget {
-  final PartItemData item;
-
-  const HomePartCardVertical({super.key, required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
+        width: width.w,
+        height: 248.h,
         decoration: BoxDecoration(
           color: const Color(0xFF161B22),
           borderRadius: BorderRadius.circular(24.r),
@@ -108,11 +74,61 @@ class HomePartCardVertical extends StatelessWidget {
         clipBehavior: Clip.hardEdge,
         child: Column(
           children: [
-            // Image section (taller for vertical cards)
-            _PartImageSection(item: item, height: 195),
+            // Image section
+            _PartImageSection(item: item, height: 150),
             // Info section
-            _PartInfoSection(item: item),
+            Expanded(
+              child: _PartInfoSection(item: item),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Vertical card used in "Recent Listings" vertical list.
+class HomePartCardVertical extends StatelessWidget {
+  final PartItemData item;
+  final VoidCallback? onTap;
+
+  const HomePartCardVertical({
+    super.key,
+    required this.item,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 20.w),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF161B22),
+            borderRadius: BorderRadius.circular(24.r),
+            border: Border.all(
+              color: const Color(0x12FFFFFF),
+              width: 0.8,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.4),
+                blurRadius: 24,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.hardEdge,
+          child: Column(
+            children: [
+              // Image section (taller for vertical cards)
+              _PartImageSection(item: item, height: 195),
+              // Info section
+              _PartInfoSection(item: item),
+            ],
+          ),
         ),
       ),
     );
@@ -134,8 +150,8 @@ class _PartImageSection extends StatelessWidget {
         children: [
           // Image
           Positioned.fill(
-            child: Image.asset(
-              item.imagePath,
+            child: AppImage(
+              imagePath: item.imagePath,
               fit: BoxFit.cover,
             ),
           ),
@@ -380,12 +396,16 @@ class _PartInfoSection extends StatelessWidget {
                           height: 10.h,
                         ),
                         SizedBox(width: 4.w),
-                        Text(
-                          item.subtitle,
-                          style: GoogleFonts.inter(
-                            fontSize: 11.sp,
-                            fontWeight: FontWeight.w400,
-                            color: const Color(0xFF8B929A),
+                        Expanded(
+                          child: Text(
+                            item.subtitle,
+                            style: GoogleFonts.inter(
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w400,
+                              color: const Color(0xFF8B929A),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],

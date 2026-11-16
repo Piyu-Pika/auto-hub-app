@@ -15,28 +15,31 @@ class BrowsePartsHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Find what you need',
-              style: GoogleFonts.inter(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w400,
-                color: const Color(0xFF8B929A),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Find what you need',
+                style: GoogleFonts.inter(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF8B929A),
+                ),
               ),
-            ),
-            SizedBox(height: 4.h),
-            Text(
-              'Browse Parts',
-              style: GoogleFonts.inter(
-                fontSize: 24.sp,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
+              SizedBox(height: 4.h),
+              Text(
+                'Browse Parts',
+                style: GoogleFonts.inter(
+                  fontSize: 24.sp,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+        SizedBox(width: 8.w),
         Container(
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
           decoration: BoxDecoration(
