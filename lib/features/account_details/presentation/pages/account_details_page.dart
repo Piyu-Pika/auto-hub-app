@@ -8,7 +8,6 @@ import 'package:auto_hub_app/features/account_details/presentation/widgets/detai
 import 'package:auto_hub_app/features/account_details/presentation/widgets/info_section_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 class AccountDetailsPage extends StatefulWidget {
@@ -23,9 +22,9 @@ class _AccountDetailsPageState extends State<AccountDetailsPage> {
   bool _isLoading = true;
 
   @override
-  void initState() {
+  Future<void> initState() async {
     super.initState();
-    _loadProfile();
+    await _loadProfile();
   }
 
   Future<void> _loadProfile() async {
@@ -62,7 +61,7 @@ class _AccountDetailsPageState extends State<AccountDetailsPage> {
               },
               onEditTap: () async {
                 await context.push('/edit-account-details');
-                _loadProfile(); // Reload after edit
+                await _loadProfile(); // Reload after edit
               },
             ),
             Expanded(

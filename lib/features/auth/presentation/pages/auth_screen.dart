@@ -1,14 +1,18 @@
 import 'package:auto_hub_app/core/constants/app_icons.dart';
 import 'package:auto_hub_app/core/theme/app_colors.dart';
 import 'package:auto_hub_app/core/theme/app_text_styles.dart';
+import 'package:auto_hub_app/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:auto_hub_app/features/auth/presentation/bloc/auth_event.dart';
+import 'package:auto_hub_app/features/auth/presentation/bloc/auth_state.dart';
 import 'package:auto_hub_app/features/auth/presentation/widgets/auth_button.dart';
 import 'package:auto_hub_app/features/auth/presentation/widgets/auth_text_field.dart';
 import 'package:auto_hub_app/features/auth/presentation/widgets/auth_toggle_tab.dart';
 import 'package:auto_hub_app/features/auth/presentation/widgets/social_button.dart';
+import 'package:auto_hub_app/injection.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -21,6 +25,7 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   late int _currentIndex;
+  late final AuthBloc _authBloc;
 
   final TextEditingController _loginEmailController = TextEditingController();
   final TextEditingController _loginPasswordController =
@@ -41,6 +46,7 @@ class _AuthScreenState extends State<AuthScreen> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialTabIndex;
+    _authBloc = getIt<AuthBloc>();
 
     _loginEmailController.addListener(_updateLoginValidity);
     _loginPasswordController.addListener(_updateLoginValidity);
@@ -50,7 +56,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   @override
-  void dispose() {
+  Future<void> dispose() async {
     _loginEmailController.removeListener(_updateLoginValidity);
     _loginPasswordController.removeListener(_updateLoginValidity);
     _signupNameController.removeListener(_updateSignupValidity);
@@ -61,6 +67,7 @@ class _AuthScreenState extends State<AuthScreen> {
     _signupNameController.dispose();
     _signupEmailController.dispose();
     _signupPasswordController.dispose();
+    await _authBloc.close();
     super.dispose();
   }
 
@@ -87,203 +94,245 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.onboardingBackground,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 24.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(height: 12.h),
-              // Back Button
-              Align(
-                alignment: Alignment.centerLeft,
-                child: GestureDetector(
-                  onTap: () {
-                    if (context.canPop()) {
-                      context.pop();
-                    }
-                  },
-                  child: Container(
-                    width: 36.w,
-                    height: 36.w,
-                    decoration: BoxDecoration(
-                      color: AppColors.onboardingSurfaceLight,
-                      borderRadius: BorderRadius.circular(16.r),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08),
-                        width: 1.w,
+    return BlocProvider.value(
+      value: _authBloc,
+      child: BlocConsumer<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthAuthenticated) {
+            context.go('/');
+          } else if (state is AuthError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          } else if (state is AuthActionSuccess) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.onboardingCyanDark,
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          final isLoading = state is AuthLoading;
+
+          return Scaffold(
+            backgroundColor: AppColors.onboardingBackground,
+            body: SafeArea(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: 24.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(height: 12.h),
+                    // Back Button
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: GestureDetector(
+                        onTap: () {
+                          if (context.canPop()) {
+                            context.pop();
+                          }
+                        },
+                        child: Container(
+                          width: 36.w,
+                          height: 36.w,
+                          decoration: BoxDecoration(
+                            color: AppColors.onboardingSurfaceLight,
+                            borderRadius: BorderRadius.circular(16.r),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.08),
+                              width: 1.w,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 4.r,
+                                offset: Offset(0, 1.h),
+                              ),
+                            ],
+                          ),
+                          padding: EdgeInsets.all(10.w),
+                          child: const Icon(AppIcons.arrowLeft),
+                        ),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.3),
-                          blurRadius: 4.r,
-                          offset: Offset(0, 1.h),
+                    ),
+                    SizedBox(height: 32.h),
+
+                    // Header Texts (Animated based on tab)
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: _currentIndex == 0
+                          ? _buildHeader(
+                              'Welcome back 👋',
+                              'Sign in to find parts, save listings & more',
+                            )
+                          : _buildHeader(
+                              'Create your account 🔧',
+                              'Join 94K+ buyers on AutoHub Express',
+                            ),
+                    ),
+                    SizedBox(height: 32.h),
+
+                    // Auth Toggle
+                    AuthToggleTab(
+                      isSignIn: _currentIndex == 0,
+                      onSignInTap: () => _switchTab(0),
+                      onSignUpTap: () => _switchTab(1),
+                    ),
+                    SizedBox(height: 24.h),
+
+                    // Social Buttons
+                    SocialButton(
+                      text: _currentIndex == 0
+                          ? 'Continue with Google'
+                          : 'Sign up with Google',
+                      iconPath: AppIcons.google,
+                      backgroundColor: AppColors.onboardingSurfaceLight,
+                      textColor: AppColors.onboardingTextPrimary,
+                      shadowColor: Colors.black.withValues(alpha: 0.3),
+                      borderColor: Colors.white.withValues(alpha: 0.1),
+                      onPressed: () {
+                        // Hooked to AuthBloc socialAuth
+                        _authBloc.add(
+                          const AuthSocialSubmitted(
+                            provider: 'google',
+                            idToken: 'mock_token',
+                          ),
+                        );
+                      },
+                    ),
+                    SizedBox(height: 12.h),
+                    SocialButton(
+                      text: _currentIndex == 0
+                          ? 'Continue with Facebook'
+                          : 'Sign up with Facebook',
+                      iconPath: AppIcons.facebook,
+                      backgroundColor: const Color(0xFF1877F2),
+                      textColor: Colors.white,
+                      shadowColor: const Color(0xFF1877F2).withValues(alpha: 0.35),
+                      onPressed: () {
+                        // Hooked to AuthBloc socialAuth
+                        _authBloc.add(
+                          const AuthSocialSubmitted(
+                            provider: 'facebook',
+                            idToken: 'mock_token',
+                          ),
+                        );
+                      },
+                    ),
+                    SizedBox(height: 24.h),
+
+                    // Divider
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 1,
+                            color: Colors.white.withValues(alpha: 0.07),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 12.w),
+                          child: Text(
+                            'or continue with email',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.textTertiary,
+                              fontSize: 12.sp,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Container(
+                            height: 1,
+                            color: Colors.white.withValues(alpha: 0.07),
+                          ),
                         ),
                       ],
                     ),
-                    padding: EdgeInsets.all(10.w),
-                    child: const Icon(
-                      AppIcons.arrowLeft
-                    )
-                  ),
-                ),
-              ),
-              SizedBox(height: 32.h),
+                    SizedBox(height: 24.h),
 
-              // Header Texts (Animated based on tab)
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: _currentIndex == 0
-                    ? _buildHeader(
-                        'Welcome back 👋',
-                        'Sign in to find parts, save listings & more',
-                      )
-                    : _buildHeader(
-                        'Create your account 🔧',
-                        'Join 94K+ buyers on AutoHub Express',
-                      ),
-              ),
-              SizedBox(height: 32.h),
-
-              // Auth Toggle
-              AuthToggleTab(
-                isSignIn: _currentIndex == 0,
-                onSignInTap: () => _switchTab(0),
-                onSignUpTap: () => _switchTab(1),
-              ),
-              SizedBox(height: 24.h),
-
-              // Social Buttons
-              SocialButton(
-                text: _currentIndex == 0
-                    ? 'Continue with Google'
-                    : 'Sign up with Google',
-                iconPath: AppIcons.google,
-                backgroundColor: AppColors.onboardingSurfaceLight,
-                textColor: AppColors.onboardingTextPrimary,
-                shadowColor: Colors.black.withValues(alpha: 0.3),
-                borderColor: Colors.white.withValues(alpha: 0.1),
-                onPressed: () {},
-              ),
-              SizedBox(height: 12.h),
-              SocialButton(
-                text: _currentIndex == 0
-                    ? 'Continue with Facebook'
-                    : 'Sign up with Facebook',
-                iconPath: AppIcons.facebook,
-                backgroundColor: const Color(0xFF1877F2),
-                textColor: Colors.white,
-                shadowColor: const Color(0xFF1877F2).withValues(alpha: 0.35),
-                onPressed: () {},
-              ),
-              SizedBox(height: 24.h),
-
-              // Divider
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 1,
-                      color: Colors.white.withValues(alpha: 0.07),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w),
-                    child: Text(
-                      'or continue with email',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textTertiary,
-                        fontSize: 12.sp,
+                    // Form content (auto-sizes to its content)
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child: _currentIndex == 0
+                            ? _buildLoginForm(isLoading)
+                            : _buildSignupForm(isLoading),
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      height: 1,
-                      color: Colors.white.withValues(alpha: 0.07),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 24.h),
+                    SizedBox(height: 8.h),
 
-              // Form content (auto-sizes to its content)
-              AnimatedSize(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: _currentIndex == 0
-                      ? _buildLoginForm()
-                      : _buildSignupForm(),
-                ),
-              ),
-              SizedBox(height: 8.h),
-
-              // Continue as Guest
-              Center(
-                child: RichText(
-                  text: TextSpan(
-                    text: 'Continue as ',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textTertiary,
-                      fontSize: 13.sp,
-                    ),
-                    children: [
-                      TextSpan(
-                        text: 'Guest',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.onboardingCyan,
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w600,
+                    // Continue as Guest
+                    Center(
+                      child: RichText(
+                        text: TextSpan(
+                          text: 'Continue as ',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textTertiary,
+                            fontSize: 13.sp,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: 'Guest',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.onboardingCyan,
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () {
+                                  context.go('/');
+                                },
+                            ),
+                          ],
                         ),
-                        recognizer: TapGestureRecognizer()
-                          ..onTap = () {
-                            context.go('/');
-                          },
                       ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(height: 24.h),
+                    ),
+                    SizedBox(height: 24.h),
 
-              // Terms & Privacy
-              RichText(
-                textAlign: TextAlign.center,
-                text: TextSpan(
-                  text: "By continuing, you agree to AutoHub Express's ",
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textTertiary,
-                    fontSize: 10.sp,
-                  ),
-                  children: [
-                    TextSpan(
-                      text: 'Terms of Service',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.onboardingCyan,
-                        fontSize: 10.sp,
+                    // Terms & Privacy
+                    RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
+                        text: "By continuing, you agree to AutoHub Express's ",
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textTertiary,
+                          fontSize: 10.sp,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: 'Terms of Service',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.onboardingCyan,
+                              fontSize: 10.sp,
+                            ),
+                            recognizer: TapGestureRecognizer()..onTap = () {},
+                          ),
+                          const TextSpan(text: ' and '),
+                          TextSpan(
+                            text: 'Privacy Policy',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.onboardingCyan,
+                              fontSize: 10.sp,
+                            ),
+                            recognizer: TapGestureRecognizer()..onTap = () {},
+                          ),
+                        ],
                       ),
-                      recognizer: TapGestureRecognizer()..onTap = () {},
                     ),
-                    const TextSpan(text: ' and '),
-                    TextSpan(
-                      text: 'Privacy Policy',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.onboardingCyan,
-                        fontSize: 10.sp,
-                      ),
-                      recognizer: TapGestureRecognizer()..onTap = () {},
-                    ),
+                    SizedBox(height: 24.h),
                   ],
                 ),
               ),
-              SizedBox(height: 24.h),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -315,7 +364,58 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  Widget _buildLoginForm() {
+  void _showForgotPasswordDialog() {
+    final emailController = TextEditingController(text: _loginEmailController.text.trim());
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: AppColors.onboardingSurfaceLight,
+        title: Text(
+          'Reset Password',
+          style: AppTextStyles.titleMedium.copyWith(color: Colors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Enter your email address to receive a password reset link.',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.onboardingTextSecondary,
+              ),
+            ),
+            SizedBox(height: 12.h),
+            AuthTextField(
+              hintText: 'Email address',
+              prefixIcon: const Icon(AppIcons.mail),
+              controller: emailController,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.onboardingCyan,
+            ),
+            onPressed: () {
+              final email = emailController.text.trim();
+              if (email.isNotEmpty) {
+                _authBloc.add(AuthForgotPasswordSubmitted(email));
+                Navigator.of(dialogCtx).pop();
+              }
+            },
+            child: const Text('Send Link', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoginForm(bool isLoading) {
     return Column(
       children: [
         AuthTextField(
@@ -336,7 +436,7 @@ class _AuthScreenState extends State<AuthScreen> {
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: () {},
+            onPressed: _showForgotPasswordDialog,
             style: TextButton.styleFrom(
               padding: EdgeInsets.zero,
               minimumSize: Size.zero,
@@ -357,16 +457,22 @@ class _AuthScreenState extends State<AuthScreen> {
           text: 'Sign In',
           isPrimary: true,
           enabled: _isLoginValid,
+          isLoading: isLoading,
           onPressed: () {
-            if (!_isLoginValid) return;
-            // TODO: trigger sign-in logic
+            if (!_isLoginValid || isLoading) return;
+            _authBloc.add(
+              AuthLoginSubmitted(
+                email: _loginEmailController.text.trim(),
+                password: _loginPasswordController.text,
+              ),
+            );
           },
         ),
       ],
     );
   }
 
-  Widget _buildSignupForm() {
+  Widget _buildSignupForm(bool isLoading) {
     return Column(
       children: [
         AuthTextField(
@@ -377,13 +483,13 @@ class _AuthScreenState extends State<AuthScreen> {
         SizedBox(height: 12.h),
         AuthTextField(
           hintText: 'Email address',
-          prefixIcon: Icon(AppIcons.mail),
+          prefixIcon: const Icon(AppIcons.mail),
           controller: _signupEmailController,
         ),
         SizedBox(height: 12.h),
         AuthTextField(
           hintText: 'Password',
-          prefixIcon: Icon(AppIcons.lock),
+          prefixIcon: const Icon(AppIcons.lock),
           isPassword: _obscureSignupPassword,
           suffixIconPath: AppIcons.eyeOutline,
           suffixIconPathActive: AppIcons.eyeDot,
@@ -394,9 +500,16 @@ class _AuthScreenState extends State<AuthScreen> {
           text: 'Create Account',
           isPrimary: true,
           enabled: _isSignupValid,
+          isLoading: isLoading,
           onPressed: () {
-            if (!_isSignupValid) return;
-            // TODO: trigger sign-up logic
+            if (!_isSignupValid || isLoading) return;
+            _authBloc.add(
+              AuthRegisterSubmitted(
+                fullName: _signupNameController.text.trim(),
+                email: _signupEmailController.text.trim(),
+                password: _signupPasswordController.text,
+              ),
+            );
           },
         ),
       ],

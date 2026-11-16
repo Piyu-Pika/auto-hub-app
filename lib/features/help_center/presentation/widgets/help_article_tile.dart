@@ -10,7 +10,7 @@ class HelpArticleTile extends StatelessWidget {
   final bool isExpanded;
   final VoidCallback onToggle;
   final bool? wasHelpful;
-  final Function(bool) onFeedback;
+  final void Function(bool) onFeedback;
 
   const HelpArticleTile({
     super.key,

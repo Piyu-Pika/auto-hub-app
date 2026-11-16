@@ -31,7 +31,7 @@ class _EditAccountDetailsPageState extends State<EditAccountDetailsPage> {
   bool _isModified = false;
 
   @override
-  void initState() {
+  Future<void> initState() async {
     super.initState();
     _nameController = TextEditingController();
     _emailController = TextEditingController();
@@ -43,7 +43,7 @@ class _EditAccountDetailsPageState extends State<EditAccountDetailsPage> {
     _phoneController.addListener(_checkModifications);
     _locationController.addListener(_checkModifications);
 
-    _loadProfile();
+    await _loadProfile();
   }
 
   Future<void> _loadProfile() async {

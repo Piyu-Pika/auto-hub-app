@@ -9,7 +9,6 @@ import 'package:auto_hub_app/features/help_center/presentation/widgets/quick_hel
 import 'package:auto_hub_app/features/help_center/presentation/widgets/submit_ticket_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 
 class HelpCenterPage extends StatefulWidget {
   const HelpCenterPage({super.key});
@@ -337,7 +336,7 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
   }
 
   void _showSubmitTicketBottomSheet(BuildContext context) {
-    showModalBottomSheet(
+    showModalBottomSheet<Map<String, String>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

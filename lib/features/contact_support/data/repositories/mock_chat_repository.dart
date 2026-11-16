@@ -135,6 +135,6 @@ class MockChatRepository implements ChatRepository {
   @override
   Future<void> sendMessage(String chatRoomId, ChatMessage message) async {
     // In a real app, this would persist the message.
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future<void>.delayed(const Duration(milliseconds: 500));
   }
 }

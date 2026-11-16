@@ -11,6 +11,15 @@ class HelpArticle {
     required this.category,
   });
 
+  factory HelpArticle.fromJson(Map<String, dynamic> json) {
+    return HelpArticle(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      content: json['content'] as String? ?? '',
+      category: json['category'] as String? ?? 'General',
+    );
+  }
+
   /// The static list of default help articles displayed in the Help Center.
   static const List<HelpArticle> defaultArticles = [
     HelpArticle(

@@ -20,6 +20,12 @@ class MyOrdersPage extends StatefulWidget {
 class _MyOrdersPageState extends State<MyOrdersPage> {
   OrderTab _selectedTab = OrderTab.all;
 
+  @override
+  void initState() {
+    super.initState();
+    OrdersRepository.instance.fetchOrders();
+  }
+
   bool _isOrderInTab(Order order, OrderTab tab) {
     switch (tab) {
       case OrderTab.all:

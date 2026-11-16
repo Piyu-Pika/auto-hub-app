@@ -27,6 +27,28 @@ class PaymentCard {
     return '••••  ••••  ••••  $last4';
   }
 
+  factory PaymentCard.fromJson(Map<String, dynamic> json) {
+    return PaymentCard(
+      id: json['id'] as String? ?? '',
+      cardHolder: json['cardHolder'] as String? ?? '',
+      last4: json['last4'] as String? ?? '',
+      expiry: json['expiry'] as String? ?? '',
+      brand: json['brand'] as String? ?? 'Card',
+      isDefault: json['isDefault'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'cardHolder': cardHolder,
+      'last4': last4,
+      'expiry': expiry,
+      'brand': brand,
+      'isDefault': isDefault,
+    };
+  }
+
   PaymentCard copyWith({
     String? id,
     String? cardHolder,

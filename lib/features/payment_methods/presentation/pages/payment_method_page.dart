@@ -1,15 +1,14 @@
 import 'package:auto_hub_app/core/constants/app_icons.dart';
 import 'package:auto_hub_app/core/theme/app_colors.dart';
 import 'package:auto_hub_app/core/theme/app_text_styles.dart';
-import 'package:auto_hub_app/features/payment_methods/data/repositories/payment_methods_repository_impl.dart';
 import 'package:auto_hub_app/features/payment_methods/domain/entities/payment_card.dart';
 import 'package:auto_hub_app/features/payment_methods/domain/repositories/payment_methods_repository.dart';
 import 'package:auto_hub_app/features/payment_methods/presentation/widgets/add_card_bottom_sheet.dart';
 import 'package:auto_hub_app/features/payment_methods/presentation/widgets/looping_card_stack.dart';
 import 'package:auto_hub_app/features/payment_methods/presentation/widgets/manage_cards_widget.dart';
+import 'package:auto_hub_app/injection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 /// The responsive and adaptive Payment Methods Page.
@@ -21,7 +20,6 @@ class PaymentMethodPage extends StatefulWidget {
 }
 
 class _PaymentMethodPageState extends State<PaymentMethodPage> {
-  // In a real app, this repository would be injected via dependency injection (e.g. GetIt, Provider, Riverpod).
   late final PaymentMethodsRepository _repository;
   
   List<PaymentCard> _cards = [];
@@ -30,7 +28,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
   @override
   void initState() {
     super.initState();
-    _repository = PaymentMethodsRepositoryImpl();
+    _repository = getIt<PaymentMethodsRepository>();
     _loadPaymentMethods();
   }
 

@@ -3,7 +3,6 @@ import 'package:auto_hub_app/core/theme/app_text_styles.dart';
 import 'package:auto_hub_app/features/profile/presentation/models/profile_menu_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class ProfileMenuItemTile extends StatelessWidget {
   const ProfileMenuItemTile({
@@ -46,7 +45,7 @@ class ProfileMenuItemTile extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Icon(
                   item.iconPath,
-                  color: item.iconBackgroundColor.withValues(alpha: 1.0),
+                  color: item.iconBackgroundColor.withValues(alpha: 1),
                   size: 20.sp,
                 ),
               ),

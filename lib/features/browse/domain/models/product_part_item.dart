@@ -51,4 +51,52 @@ class ProductPartItem {
       isFavorite: isFavorite ?? this.isFavorite,
     );
   }
+
+  factory ProductPartItem.fromJson(Map<String, dynamic> json) {
+    final rawPrice = json['price'];
+    final price = (rawPrice is num) ? rawPrice.toDouble() : 0.0;
+
+    final rawRating = json['rating'];
+    final rating = (rawRating is num) ? rawRating.toDouble() : 0.0;
+
+    final image = json['imagePath'] as String? ??
+        json['imageUrl'] as String? ??
+        'assets/images/home_part_bumper.png';
+
+    return ProductPartItem(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      price: price,
+      condition: json['condition'] as String? ?? 'Good',
+      rating: rating,
+      make: json['make'] as String? ?? '',
+      model: json['model'] as String? ?? '',
+      yearRange: json['yearRange'] as String? ?? '',
+      category: json['category'] as String? ?? '',
+      warranty: json['warranty'] as String? ?? '30 Days',
+      location: json['location'] as String? ?? 'AutoHub Express',
+      imagePath: image,
+      tag: json['tag'] as String?,
+      isFavorite: json['isFavorite'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'price': price,
+      'condition': condition,
+      'rating': rating,
+      'make': make,
+      'model': model,
+      'yearRange': yearRange,
+      'category': category,
+      'warranty': warranty,
+      'location': location,
+      'imagePath': imagePath,
+      if (tag != null) 'tag': tag,
+      'isFavorite': isFavorite,
+    };
+  }
 }

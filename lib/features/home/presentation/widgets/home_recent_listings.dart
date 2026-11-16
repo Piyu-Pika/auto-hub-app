@@ -1,3 +1,4 @@
+import 'package:auto_hub_app/features/browse/domain/models/product_part_item.dart';
 import 'package:auto_hub_app/features/home/presentation/widgets/home_part_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -6,9 +7,11 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class HomeRecentListings extends StatelessWidget {
-  const HomeRecentListings({super.key});
+  const HomeRecentListings({super.key, this.parts});
 
-  static final _items = [
+  final List<ProductPartItem>? parts;
+
+  static final _defaultItems = [
     const PartItemData(
       imagePath: 'assets/images/home_part_alternator.png',
       title: 'OEM Alternator',
@@ -58,6 +61,30 @@ class HomeRecentListings extends StatelessWidget {
       condition: PartCondition.excellent,
     ),
   ];
+
+  List<PartItemData> get _items {
+    if (parts != null && parts!.isNotEmpty) {
+      return parts!.map((p) {
+        return PartItemData(
+          imagePath: p.imagePath,
+          title: p.title,
+          subtitle: '${p.make} ${p.model} (${p.yearRange})',
+          price: '\$${p.price.toStringAsFixed(0)}',
+          category: p.category,
+          warranty: p.warranty,
+          location: p.location,
+          rating: p.rating,
+          badge: p.tag == 'Featured'
+              ? PartBadgeType.featured
+              : PartBadgeType.none,
+          condition: p.condition.toLowerCase().contains('excellent')
+              ? PartCondition.excellent
+              : PartCondition.good,
+        );
+      }).toList();
+    }
+    return _defaultItems;
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -22,6 +22,32 @@ class Address {
   final String zip;
   final bool isDefault;
 
+  factory Address.fromJson(Map<String, dynamic> json) {
+    return Address(
+      id: json['id'] as String? ?? '',
+      type: json['type'] as String? ?? 'home',
+      label: json['label'] as String? ?? 'Home',
+      streetAddress: json['streetAddress'] as String? ?? '',
+      city: json['city'] as String? ?? '',
+      state: json['state'] as String? ?? '',
+      zip: json['zip'] as String? ?? '',
+      isDefault: json['isDefault'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (id.isNotEmpty) 'id': id,
+      'type': type,
+      'label': label,
+      'streetAddress': streetAddress,
+      'city': city,
+      'state': state,
+      'zip': zip,
+      'isDefault': isDefault,
+    };
+  }
+
   Address copyWith({
     String? id,
     String? type,

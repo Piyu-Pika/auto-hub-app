@@ -1,11 +1,11 @@
 import 'package:auto_hub_app/core/constants/app_icons.dart';
 import 'package:auto_hub_app/core/theme/app_colors.dart';
 import 'package:auto_hub_app/core/theme/app_text_styles.dart';
-import 'package:auto_hub_app/features/your_addresses/data/repositories/mock_address_repository.dart';
 import 'package:auto_hub_app/features/your_addresses/domain/entities/address.dart';
 import 'package:auto_hub_app/features/your_addresses/domain/repositories/address_repository.dart';
 import 'package:auto_hub_app/features/your_addresses/presentation/widgets/address_card.dart';
 import 'package:auto_hub_app/features/your_addresses/presentation/widgets/address_form.dart';
+import 'package:auto_hub_app/injection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -18,13 +18,14 @@ class YourAddressesPage extends StatefulWidget {
 }
 
 class _YourAddressesPageState extends State<YourAddressesPage> {
-  final AddressRepository _repository = MockAddressRepository();
+  late final AddressRepository _repository;
   List<Address> _addresses = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _repository = getIt<AddressRepository>();
     _loadAddresses();
   }
 
@@ -98,7 +99,7 @@ class _YourAddressesPageState extends State<YourAddressesPage> {
   }
 
   Future<void> _openAddressForm([Address? address]) async {
-    await showModalBottomSheet(
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

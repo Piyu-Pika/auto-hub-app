@@ -4,22 +4,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AuthButton extends StatelessWidget {
-
   const AuthButton({
     required this.text,
     required this.onPressed,
     super.key,
     this.isPrimary = true,
     this.enabled = true,
+    this.isLoading = false,
   });
   final String text;
   final VoidCallback onPressed;
   final bool isPrimary;
   final bool enabled;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
-    final bool isEnabled = enabled;
+    final bool isEnabled = enabled && !isLoading;
     final bool showPrimary = isPrimary && isEnabled;
 
     return Container(
@@ -58,14 +59,23 @@ class AuthButton extends StatelessWidget {
           onTap: isEnabled ? onPressed : null,
           borderRadius: BorderRadius.circular(16.r),
           child: Center(
-            child: Text(
-              text,
-              style: AppTextStyles.labelLarge.copyWith(
-                color: showPrimary ? Colors.white : AppColors.textTertiary,
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            child: isLoading
+                ? SizedBox(
+                    width: 22.w,
+                    height: 22.w,
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Text(
+                    text,
+                    style: AppTextStyles.labelLarge.copyWith(
+                      color: showPrimary ? Colors.white : AppColors.textTertiary,
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
           ),
         ),
       ),

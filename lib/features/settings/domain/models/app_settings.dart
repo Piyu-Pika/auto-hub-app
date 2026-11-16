@@ -37,6 +37,38 @@ class AppSettings {
   // Cache State
   final double cacheSizeMb;
 
+  factory AppSettings.fromJson(Map<String, dynamic> json) {
+    return AppSettings(
+      pushNotifications: json['pushNotifications'] as bool? ?? true,
+      emailNotifications: json['emailNotifications'] as bool? ?? true,
+      priceDropAlerts: json['priceDropAlerts'] as bool? ?? false,
+      orderUpdates: json['orderUpdates'] as bool? ?? true,
+      chatMessages: json['chatMessages'] as bool? ?? true,
+      notificationSounds: json['notificationSounds'] as bool? ?? true,
+      vibration: json['vibration'] as bool? ?? true,
+      darkMode: json['darkMode'] as bool? ?? true,
+      autoDistanceUnit: json['autoDistanceUnit'] as bool? ?? true,
+      selectedLanguage: json['selectedLanguage'] as String? ?? 'English',
+      selectedLanguageFlag: json['selectedLanguageFlag'] as String? ?? '🇺🇸',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'pushNotifications': pushNotifications,
+      'emailNotifications': emailNotifications,
+      'priceDropAlerts': priceDropAlerts,
+      'orderUpdates': orderUpdates,
+      'chatMessages': chatMessages,
+      'notificationSounds': notificationSounds,
+      'vibration': vibration,
+      'darkMode': darkMode,
+      'autoDistanceUnit': autoDistanceUnit,
+      'selectedLanguage': selectedLanguage,
+      'selectedLanguageFlag': selectedLanguageFlag,
+    };
+  }
+
   AppSettings copyWith({
     bool? pushNotifications,
     bool? emailNotifications,

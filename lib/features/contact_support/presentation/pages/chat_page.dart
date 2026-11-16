@@ -1,7 +1,6 @@
 import 'package:auto_hub_app/core/constants/app_icons.dart';
 import 'package:auto_hub_app/core/theme/app_colors.dart';
 import 'package:auto_hub_app/core/theme/app_text_styles.dart';
-import 'package:auto_hub_app/features/contact_support/data/repositories/mock_chat_repository.dart';
 import 'package:auto_hub_app/features/contact_support/domain/entities/chat_message.dart';
 import 'package:auto_hub_app/features/contact_support/domain/entities/chat_room_info.dart';
 import 'package:auto_hub_app/features/contact_support/domain/repositories/chat_repository.dart';
@@ -12,6 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import 'package:auto_hub_app/injection.dart';
 
 class LiveChatPage extends StatefulWidget {
   const LiveChatPage({
@@ -26,7 +27,7 @@ class LiveChatPage extends StatefulWidget {
 }
 
 class _LiveChatPageState extends State<LiveChatPage> {
-  final ChatRepository _chatRepository = MockChatRepository();
+  late final ChatRepository _chatRepository;
   List<ChatMessage> _messages = [];
   ChatRoomInfo? _roomInfo;
   bool _isLoading = true;
@@ -34,6 +35,7 @@ class _LiveChatPageState extends State<LiveChatPage> {
   @override
   void initState() {
     super.initState();
+    _chatRepository = getIt<ChatRepository>();
     _loadData();
   }
 

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:auto_hub_app/core/theme/app_colors.dart';
-import 'package:auto_hub_app/features/browse/data/repositories/mock_browse_repository.dart';
 import 'package:auto_hub_app/features/browse/domain/models/product_part_item.dart';
 import 'package:auto_hub_app/features/browse/domain/repositories/browse_repository.dart';
 import 'package:auto_hub_app/features/browse/presentation/widgets/browse_parts_header.dart';
@@ -11,11 +10,11 @@ import 'package:auto_hub_app/features/browse/presentation/widgets/product_card.d
 import 'package:auto_hub_app/features/browse/presentation/widgets/search_inputs.dart';
 import 'package:auto_hub_app/features/browse/presentation/widgets/search_type_toggle.dart';
 import 'package:auto_hub_app/features/browse/presentation/widgets/sort_chips_row.dart';
+import 'package:auto_hub_app/injection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:auto_hub_app/core/theme/app_colors.dart';
 
 class BrowsePage extends StatefulWidget {
   const BrowsePage({super.key});
@@ -38,7 +37,7 @@ class _BrowsePageState extends State<BrowsePage> {
   double _maxPrice = 2000;
 
   // Repository & State
-  final BrowseRepository _repository = MockBrowseRepository();
+  late final BrowseRepository _repository;
   bool _isLoading = true;
   List<ProductPartItem> _parts = [];
   int _totalCount = 0; // To keep track of listed count
@@ -46,6 +45,7 @@ class _BrowsePageState extends State<BrowsePage> {
   @override
   void initState() {
     super.initState();
+    _repository = getIt<BrowseRepository>();
     unawaited(_loadInitialCount());
     unawaited(_fetchParts());
 
