@@ -112,5 +112,8 @@ abstract final class AppColors {
 
   /// Onboarding/dark mode error surface (for destructive actions).
   static const Color onboardingErrorSurface = Color(0xFF1C1A1E);
+
+  /// Primary cyan accent color.
+  static const Color accentCyan = Color(0xFF0DA0CE);
 }
 

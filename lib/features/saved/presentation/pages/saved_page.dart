@@ -32,10 +32,10 @@ class _SavedPageState extends State<SavedPage> {
     setState(() => _isLoading = true);
     try {
       final datasource = getIt<BrowseRemoteDatasource>();
-      final response = await datasource.getSavedParts();
+      final items = await datasource.getSavedParts();
       if (mounted) {
         setState(() {
-          _savedParts = response.data ?? [];
+          _savedParts = items;
           _isLoading = false;
         });
       }
