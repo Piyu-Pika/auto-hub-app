@@ -19,7 +19,11 @@ import 'package:auto_hub_app/features/splash/presentation/pages/splash_page.dart
 import 'package:auto_hub_app/features/vin/domain/entities/vin_decode_result.dart';
 import 'package:auto_hub_app/features/vin/presentation/pages/vin_result_page.dart';
 import 'package:auto_hub_app/features/your_addresses/presentation/pages/your_addresses_page.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
+final GlobalKey<NavigatorState> rootNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'root');
 
 /// Application router configuration using GoRouter.
 ///
@@ -27,8 +31,9 @@ import 'package:go_router/go_router.dart';
 /// routes via this configuration. Auth guards and redirects will
 /// be added here as features are built.
 final GoRouter appRouter = GoRouter(
+  navigatorKey: rootNavigatorKey,
   initialLocation: '/splash',
-  debugLogDiagnostics: true,
+  debugLogDiagnostics: false,
   routes: [
     GoRoute(
       path: '/splash',

@@ -74,7 +74,9 @@ class AutoHubApp extends StatelessWidget {
         return MaterialApp.router(
           title: 'AutoHub Express',
           debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
+          theme: AppTheme.dark,
+          darkTheme: AppTheme.dark,
+          themeMode: ThemeMode.dark,
           routerConfig: appRouter,
         );
       },
