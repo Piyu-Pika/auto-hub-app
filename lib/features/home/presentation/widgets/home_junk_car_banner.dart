@@ -1,13 +1,23 @@
+import 'package:auto_hub_app/features/home/domain/entities/home_feed_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class HomeJunkCarBanner extends StatelessWidget {
-  const HomeJunkCarBanner({super.key});
+  const HomeJunkCarBanner({super.key, this.junkBanner});
+
+  final JunkBannerEntity? junkBanner;
 
   @override
   Widget build(BuildContext context) {
+    final banner = junkBanner;
+    if (banner == null) {
+      return const SizedBox.shrink();
+    }
+    final ctaUrl = banner.ctaUrl ?? '/new-junk-request';
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: Container(
@@ -33,8 +43,8 @@ class HomeJunkCarBanner extends StatelessWidget {
               child: Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment(-0.81, -1.0),
-                    end: Alignment(0.81, 1.0),
+                    begin: Alignment(-0.81, -1),
+                    end: Alignment(0.81, 1),
                     colors: [Color(0xFF0A1220), Color(0xFF08101A)],
                   ),
                 ),
@@ -93,7 +103,7 @@ class HomeJunkCarBanner extends StatelessWidget {
                         SizedBox(height: 6.h),
                         // Headline
                         Text(
-                          'Turn your wreck\ninto cash',
+                          banner.title,
                           style: GoogleFonts.inter(
                             fontSize: 17.sp,
                             fontWeight: FontWeight.w800,
@@ -105,7 +115,7 @@ class HomeJunkCarBanner extends StatelessWidget {
                         SizedBox(height: 6.h),
                         // Sub text
                         Text(
-                          'Free towing · Instant cash offer',
+                          banner.subtitle,
                           style: GoogleFonts.inter(
                             fontSize: 12.sp,
                             fontWeight: FontWeight.w400,
@@ -117,31 +127,40 @@ class HomeJunkCarBanner extends StatelessWidget {
                   ),
                   SizedBox(width: 16.w),
                   // CTA button
-                  Container(
-                    height: 44.h,
-                    width: 98.w,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFF0DA0CE), Color(0xFF0B8FB5)],
-                      ),
-                      borderRadius: BorderRadius.circular(16.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF0DA0CE).withValues(alpha: 0.4),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                  Semantics(
+                    button: true,
+                    label: 'Get junk car offer',
+                    child: GestureDetector(
+                      onTap: () => context.push(ctaUrl),
+                      child: Container(
+                        height: 44.h,
+                        width: 98.w,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF0DA0CE), Color(0xFF0B8FB5)],
+                          ),
+                          borderRadius: BorderRadius.circular(16.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFF0DA0CE,
+                              ).withValues(alpha: 0.4),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Get Offer',
-                      style: GoogleFonts.inter(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Get Offer',
+                          style: GoogleFonts.inter(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                   ),

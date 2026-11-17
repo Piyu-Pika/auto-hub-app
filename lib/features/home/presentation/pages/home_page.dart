@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:auto_hub_app/core/theme/app_colors.dart';
 import 'package:auto_hub_app/features/home/presentation/bloc/home_cubit.dart';
 import 'package:auto_hub_app/features/home/presentation/bloc/home_state.dart';
 import 'package:auto_hub_app/features/home/presentation/widgets/hitech_insurance_widget.dart';
@@ -16,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -23,7 +27,11 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => getIt<HomeCubit>()..loadFeed(),
+      create: (_) {
+        final cubit = getIt<HomeCubit>();
+        unawaited(cubit.loadFeed());
+        return cubit;
+      },
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light,
         child: Scaffold(
@@ -32,6 +40,30 @@ class HomePage extends StatelessWidget {
             bottom: false,
             child: BlocBuilder<HomeCubit, HomeState>(
               builder: (context, state) {
+                if (state is HomeLoading) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.onboardingCyan,
+                      strokeWidth: 3,
+                    ),
+                  );
+                }
+
+                if (state is HomeError) {
+                  return _HomeErrorView(
+                    message: state.message,
+                    onRetry: () =>
+                        unawaited(context.read<HomeCubit>().loadFeed()),
+                  );
+                }
+
+                if (state is HomeEmpty) {
+                  return _HomeEmptyView(
+                    onRetry: () =>
+                        unawaited(context.read<HomeCubit>().loadFeed()),
+                  );
+                }
+
                 final feed = state is HomeLoaded ? state.feed : null;
 
                 return Column(
@@ -39,8 +71,9 @@ class HomePage extends StatelessWidget {
                     const HomeAppBar(),
                     Expanded(
                       child: RefreshIndicator(
-                        onRefresh: () =>
-                            context.read<HomeCubit>().loadFeed(isRefresh: true),
+                        onRefresh: () => context
+                            .read<HomeCubit>()
+                            .loadFeed(isRefresh: true),
                         child: SingleChildScrollView(
                           physics: const AlwaysScrollableScrollPhysics(),
                           child: Column(
@@ -49,7 +82,12 @@ class HomePage extends StatelessWidget {
                               SizedBox(height: 16.h),
 
                               // Search bar
-                              const HomeSearchBar(),
+                              HomeSearchBar(
+                                onSubmitted: (query) {
+                                  if (query.trim().isEmpty) return;
+                                  unawaited(context.push('/browse'));
+                                },
+                              ),
 
                               SizedBox(height: 16.h),
 
@@ -72,7 +110,9 @@ class HomePage extends StatelessWidget {
                               SizedBox(height: 20.h),
 
                               // Browse by Category
-                              const HomeCategorySection(),
+                              HomeCategorySection(
+                                categories: feed?.categories,
+                              ),
 
                               SizedBox(height: 15.h),
 
@@ -92,12 +132,16 @@ class HomePage extends StatelessWidget {
                               SizedBox(height: 20.h),
 
                               // Junk Your Car CTA
-                              const HomeJunkCarBanner(),
+                              HomeJunkCarBanner(
+                                junkBanner: feed?.junkBanner,
+                              ),
 
                               SizedBox(height: 24.h),
 
                               // Trust strip
-                              const HomeTrustStrip(),
+                              HomeTrustStrip(
+                                trustItems: feed?.trustItems,
+                              ),
 
                               SizedBox(height: 40.h),
                             ],
@@ -110,6 +154,117 @@ class HomePage extends StatelessWidget {
               },
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeErrorView extends StatelessWidget {
+  const _HomeErrorView({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 32.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.cloud_off_rounded,
+              color: AppColors.onboardingCyan,
+              size: 48,
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              'Something went wrong',
+              style: TextStyle(
+                color: AppColors.onboardingTextPrimary,
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.onboardingTextSecondary,
+                fontSize: 13.sp,
+              ),
+            ),
+            SizedBox(height: 20.h),
+            ElevatedButton(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.onboardingCyan,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeEmptyView extends StatelessWidget {
+  const _HomeEmptyView({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 32.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.search_off_rounded,
+              color: AppColors.onboardingCyan,
+              size: 48,
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              'No listings yet',
+              style: TextStyle(
+                color: AppColors.onboardingTextPrimary,
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'Check back soon for fresh parts and deals.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppColors.onboardingTextSecondary,
+                fontSize: 13.sp,
+              ),
+            ),
+            SizedBox(height: 20.h),
+            ElevatedButton(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.onboardingCyan,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+              ),
+              child: const Text('Refresh'),
+            ),
+          ],
         ),
       ),
     );

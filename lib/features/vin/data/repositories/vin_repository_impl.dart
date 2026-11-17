@@ -4,7 +4,9 @@ import 'package:auto_hub_app/features/vin/data/datasources/vin_remote_datasource
 import 'package:auto_hub_app/features/vin/domain/entities/vin_decode_result.dart';
 import 'package:auto_hub_app/features/vin/domain/repositories/vin_repository.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:injectable/injectable.dart';
 
+@LazySingleton(as: VinRepository)
 class VinRepositoryImpl implements VinRepository {
   const VinRepositoryImpl(this._datasource);
 

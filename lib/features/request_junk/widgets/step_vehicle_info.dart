@@ -1,13 +1,10 @@
 import 'package:auto_hub_app/core/constants/app_icons.dart';
 import 'package:auto_hub_app/core/theme/app_colors.dart';
 import 'package:auto_hub_app/core/theme/app_text_styles.dart';
-import 'package:auto_hub_app/features/vin/data/datasources/vin_remote_datasource.dart';
-import 'package:auto_hub_app/features/vin/data/repositories/vin_repository_impl.dart';
-import 'package:auto_hub_app/features/vin/domain/usecases/decode_vin_usecase.dart';
 import 'package:auto_hub_app/features/vin/domain/utils/vin_validator.dart';
 import 'package:auto_hub_app/features/vin/presentation/cubit/vin_cubit.dart';
 import 'package:auto_hub_app/features/vin/presentation/cubit/vin_state.dart';
-import 'package:dio/dio.dart';
+import 'package:auto_hub_app/injection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -69,13 +66,7 @@ class _StepVehicleInfoState extends State<StepVehicleInfo> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => VinCubit(
-        DecodeVinUsecase(
-          VinRepositoryImpl(
-            VinRemoteDatasourceImpl(Dio()),
-          ),
-        ),
-      ),
+      create: (_) => getIt<VinCubit>(),
       child: BlocConsumer<VinCubit, VinState>(
         listener: (context, state) {
           if (state is VinLoaded) {

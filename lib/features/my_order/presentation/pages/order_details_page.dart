@@ -22,6 +22,7 @@ class OrderDetailsPage extends StatefulWidget {
 
 class _OrderDetailsPageState extends State<OrderDetailsPage> {
   Order? _order;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -29,8 +30,14 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     _loadOrder();
   }
 
-  void _loadOrder() {
-    _order = OrdersRepository.instance.getOrderById(widget.orderId);
+  Future<void> _loadOrder() async {
+    final order = await OrdersRepository.instance.fetchOrderById(widget.orderId);
+    if (mounted) {
+      setState(() {
+        _order = order;
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _showCancelDialog() async {
@@ -177,6 +184,27 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: AppColors.onboardingBackground,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(context),
+              Expanded(
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.onboardingCyan,
+                    strokeWidth: 3,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final order = _order;
     if (order == null) {
       return Scaffold(

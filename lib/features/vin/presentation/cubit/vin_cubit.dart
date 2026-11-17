@@ -1,7 +1,9 @@
 import 'package:auto_hub_app/features/vin/domain/usecases/decode_vin_usecase.dart';
 import 'package:auto_hub_app/features/vin/presentation/cubit/vin_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:injectable/injectable.dart';
 
+@injectable
 class VinCubit extends Cubit<VinState> {
   VinCubit(this._decodeVin) : super(const VinInitial());
 

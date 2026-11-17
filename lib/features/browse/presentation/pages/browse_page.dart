@@ -24,6 +24,12 @@ class BrowsePage extends StatefulWidget {
 }
 
 class _BrowsePageState extends State<BrowsePage> {
+  // ── Constants ──────────────────────────────────────────────────────────
+  static const int _pageSize = 20;
+  static const double _defaultMaxPrice = 2000.0;
+  static const double _scrollLoadThreshold = 250.0;
+  static const Duration _debounceDuration = Duration(milliseconds: 350);
+
   // State variables
   SearchType _searchType = SearchType.part;
   SortType _sortType = SortType.newest;
@@ -36,7 +42,7 @@ class _BrowsePageState extends State<BrowsePage> {
   List<String> _selectedMakes = ['All Makes'];
   List<String> _selectedCategories = ['All Categories'];
   List<String> _selectedConditions = ['All'];
-  double _maxPrice = 2000;
+  double _maxPrice = _defaultMaxPrice;
 
   // Repository & State
   late final BrowseRepository _repository;
@@ -44,10 +50,10 @@ class _BrowsePageState extends State<BrowsePage> {
   bool _isLoadingMore = false;
   bool _hasMore = true;
   int _currentPage = 1;
-  static const int _pageSize = 20;
 
   List<ProductPartItem> _parts = [];
   int _totalCount = 0; // To keep track of listed count
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -65,8 +71,8 @@ class _BrowsePageState extends State<BrowsePage> {
     if (!_scrollController.hasClients) return;
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.offset;
-    // Trigger load more when 250px before reaching the bottom
-    if (currentScroll >= (maxScroll - 250) &&
+    // Trigger load more when threshold before reaching the bottom
+    if (currentScroll >= (maxScroll - _scrollLoadThreshold) &&
         !_isLoading &&
         !_isLoadingMore &&
         _hasMore) {
@@ -75,11 +81,19 @@ class _BrowsePageState extends State<BrowsePage> {
   }
 
   Future<void> _loadInitialCount() async {
-    final allParts = await _repository.getParts();
-    if (mounted) {
-      setState(() {
-        _totalCount = allParts.length;
-      });
+    try {
+      final totalCount = await _repository.countParts();
+      if (mounted) {
+        setState(() {
+          _totalCount = totalCount;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to load catalog count.';
+        });
+      }
     }
   }
 
@@ -95,18 +109,30 @@ class _BrowsePageState extends State<BrowsePage> {
 
   void _onPartSearchChanged() {
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+    _debounceTimer = Timer(_debounceDuration, () {
       if (mounted) {
-        unawaited(_fetchParts());
+        unawaited(_fetchParts().catchError((e) {
+          if (mounted) {
+            setState(() {
+              _errorMessage = 'Search failed. Please try again.';
+            });
+          }
+        }));
       }
     });
   }
 
   void _onVinSearchChanged() {
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 350), () {
+    _debounceTimer = Timer(_debounceDuration, () {
       if (mounted) {
-        unawaited(_fetchParts());
+        unawaited(_fetchParts().catchError((e) {
+          if (mounted) {
+            setState(() {
+              _errorMessage = 'VIN lookup failed. Please try again.';
+            });
+          }
+        }));
       }
     });
   }
@@ -116,11 +142,18 @@ class _BrowsePageState extends State<BrowsePage> {
       _selectedMakes = ['All Makes'];
       _selectedCategories = ['All Categories'];
       _selectedConditions = ['All'];
-      _maxPrice = 2000.0;
+      _maxPrice = _defaultMaxPrice;
       _partController.clear();
       _vinController.clear();
+      _errorMessage = null;
     });
-    unawaited(_fetchParts());
+    unawaited(_fetchParts().catchError((e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to clear filters.';
+        });
+      }
+    }));
   }
 
   bool _areFiltersApplied() {
@@ -131,7 +164,7 @@ class _BrowsePageState extends State<BrowsePage> {
         !_selectedCategories.contains('All Categories');
     final condsApplied =
         _selectedConditions.isNotEmpty && !_selectedConditions.contains('All');
-    final priceApplied = _maxPrice < 2000.0;
+    final priceApplied = _maxPrice < _defaultMaxPrice;
     final queryApplied = _partController.text.isNotEmpty;
     return makesApplied ||
         catsApplied ||
@@ -146,27 +179,34 @@ class _BrowsePageState extends State<BrowsePage> {
     List<String> conditions,
     double maxPrice,
   ) async {
-    final results = await _repository.searchParts(
+    return await _repository.countParts(
       query: _partController.text.trim(),
       makes: makes,
       categories: categories,
       conditions: conditions,
       maxPrice: maxPrice,
-      limit: 100,
     );
-    return results.length;
   }
 
-  void _sortPartsList(List<ProductPartItem> list) {
+  List<ProductPartItem> _getSortedParts(List<ProductPartItem> list) {
+    final sorted = List<ProductPartItem>.from(list);
     switch (_sortType) {
       case SortType.priceAsc:
-        list.sort((a, b) => a.price.compareTo(b.price));
+        sorted.sort((a, b) => a.price.compareTo(b.price));
       case SortType.priceDesc:
-        list.sort((a, b) => b.price.compareTo(a.price));
+        sorted.sort((a, b) => b.price.compareTo(a.price));
       case SortType.topRated:
-        list.sort((a, b) => b.rating.compareTo(a.rating));
+        sorted.sort((a, b) => b.rating.compareTo(a.rating));
       case SortType.newest:
+        // Already sorted by newest first (repository default)
+        break;
     }
+    return sorted;
+  }
+
+  bool _isValidVIN(String vin) {
+    return vin.length == 17 &&
+        RegExp(r'^[A-HJ-NPR-Za-hj-npr-z0-9]{17}$').hasMatch(vin);
   }
 
   Future<void> _fetchParts({bool reset = true}) async {
@@ -175,6 +215,7 @@ class _BrowsePageState extends State<BrowsePage> {
         _isLoading = true;
         _currentPage = 1;
         _hasMore = true;
+        _errorMessage = null;
       });
     }
 
@@ -182,6 +223,17 @@ class _BrowsePageState extends State<BrowsePage> {
     try {
       if (_searchType == SearchType.vin) {
         final vinText = _vinController.text.trim();
+        if (!_isValidVIN(vinText)) {
+          if (mounted) {
+            setState(() {
+              _parts = [];
+              _hasMore = false;
+              _isLoading = false;
+              _errorMessage = null;
+            });
+          }
+          return;
+        }
         results = await _repository.searchByVin(
           vinText,
           page: 1,
@@ -199,20 +251,21 @@ class _BrowsePageState extends State<BrowsePage> {
         );
       }
 
-      _sortPartsList(results);
+      final sortedResults = _getSortedParts(results);
 
       if (mounted) {
         setState(() {
-          _parts = results;
+          _parts = sortedResults;
           _currentPage = 1;
           _hasMore = results.length >= _pageSize;
           _isLoading = false;
         });
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _errorMessage = 'Failed to load parts. Please try again.';
         });
       }
     }
@@ -262,20 +315,21 @@ class _BrowsePageState extends State<BrowsePage> {
 
           final updatedParts = List<ProductPartItem>.from(_parts)
             ..addAll(uniqueNewItems);
-          _sortPartsList(updatedParts);
+          final sortedParts = _getSortedParts(updatedParts);
 
           setState(() {
             _currentPage = nextPage;
-            _parts = updatedParts;
+            _parts = sortedParts;
             _hasMore = newItems.length >= _pageSize;
             _isLoadingMore = false;
           });
         }
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(() {
           _isLoadingMore = false;
+          _errorMessage = 'Failed to load more parts.';
         });
       }
     }
@@ -301,7 +355,13 @@ class _BrowsePageState extends State<BrowsePage> {
                 _selectedConditions = conditions;
                 _maxPrice = maxPrice;
               });
-              unawaited(_fetchParts());
+              unawaited(_fetchParts().catchError((e) {
+                if (mounted) {
+                  setState(() {
+                    _errorMessage = 'Failed to apply filters.';
+                  });
+                }
+              }));
             },
           );
         },
@@ -310,21 +370,70 @@ class _BrowsePageState extends State<BrowsePage> {
   }
 
   Future<void> _toggleFavorite(String partId) async {
-    await _repository.toggleFavorite(partId);
-    if (mounted) {
-      setState(() {
-        _parts = _parts.map((p) {
-          if (p.id == partId) {
-            return p.copyWith(isFavorite: !p.isFavorite);
-          }
-          return p;
-        }).toList();
-      });
+    try {
+      await _repository.toggleFavorite(partId);
+      if (mounted) {
+        setState(() {
+          _parts = _parts.map((p) {
+            if (p.id == partId) {
+              return p.copyWith(isFavorite: !p.isFavorite);
+            }
+            return p;
+          }).toList();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to update favorite.';
+        });
+      }
     }
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.error_outline,
+            size: 48,
+            color: AppColors.error,
+          ),
+          SizedBox(height: 16.h),
+          Text(
+            _errorMessage ?? 'An error occurred.',
+            style: GoogleFonts.inter(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 16.h),
+          ElevatedButton(
+            onPressed: () {
+              setState(() => _errorMessage = null);
+              _fetchParts(reset: true);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.info,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_errorMessage != null && _parts.isEmpty) {
+      return _buildErrorState();
+    }
+
     final showVinBanner =
         _searchType == SearchType.vin && _vinController.text.length == 17;
 
@@ -346,7 +455,13 @@ class _BrowsePageState extends State<BrowsePage> {
                       setState(() {
                         _searchType = type;
                       });
-                      unawaited(_fetchParts());
+                      unawaited(_fetchParts().catchError((e) {
+                        if (mounted) {
+                          setState(() {
+                            _errorMessage = 'Failed to switch search type.';
+                          });
+                        }
+                      }));
                     },
                   ),
                   SizedBox(height: 16.h),
@@ -363,8 +478,7 @@ class _BrowsePageState extends State<BrowsePage> {
                       setState(() {
                         _sortType = sort;
                       });
-                      _sortPartsList(_parts);
-                      setState(() {});
+                      // _getSortedParts() is applied lazily in build via _parts
                     },
                   ),
                   SizedBox(height: 12.h),
@@ -439,26 +553,17 @@ class _BrowsePageState extends State<BrowsePage> {
                         ),
                         if (_searchType == SearchType.part &&
                             _areFiltersApplied())
-                          GestureDetector(
-                            onTap: _clearFilters,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.close,
-                                  size: 14.r,
-                                  color: AppColors.info,
-                                ),
-                                SizedBox(width: 4.w),
-                                Text(
-                                  'Clear filters',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12.sp,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.info,
-                                  ),
-                                ),
-                              ],
+                          IconButton(
+                            onPressed: _clearFilters,
+                            icon: const Icon(Icons.close),
+                            tooltip: 'Clear filters',
+                            color: AppColors.info,
+                            iconSize: 14.r,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            style: IconButton.styleFrom(
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                           ),
                       ],

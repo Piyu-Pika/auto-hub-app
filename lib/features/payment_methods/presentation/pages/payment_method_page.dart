@@ -24,6 +24,7 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
   
   List<PaymentCard> _cards = [];
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -33,12 +34,18 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
   }
 
   Future<void> _loadPaymentMethods() async {
-    setState(() => _isLoading = true);
     try {
       final cards = await _repository.getPaymentMethods();
       if (mounted) {
         setState(() {
           _cards = cards;
+          _errorMessage = null;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to load payment methods. Please try again.';
         });
       }
     } finally {
@@ -140,16 +147,20 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
                     final isTablet = constraints.maxWidth >= 600;
 
                     if (_isLoading) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.onboardingCyan,
-                        ),
-                      );
-                    }
-
-                    if (_cards.isEmpty) {
-                      return _buildEmptyState(context);
-                    }
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.onboardingCyan,
+                                ),
+                              );
+                            }
+      
+                            if (_errorMessage != null) {
+                              return _buildErrorState();
+                            }
+      
+                            if (_cards.isEmpty) {
+                              return _buildEmptyState(context);
+                            }
 
                     if (isTablet) {
                       return _buildTabletLayout(context);
@@ -162,6 +173,66 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80.w,
+            height: 80.h,
+            decoration: BoxDecoration(
+              color: AppColors.error.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.error.withValues(alpha: 0.3),
+                width: 0.8,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              Icons.error_outline_rounded,
+              size: 32.sp,
+              color: AppColors.error,
+            ),
+          ),
+          SizedBox(height: 18.h),
+          Text(
+            'Something went wrong',
+            style: AppTextStyles.headlineSmall.copyWith(
+              color: AppColors.onboardingTextPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 16.sp,
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            _errorMessage ?? 'Failed to load payment methods. Please try again.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.onboardingTextSecondary,
+              fontSize: 13.sp,
+              height: 1.4,
+            ),
+          ),
+          SizedBox(height: 20.h),
+          ElevatedButton(
+            onPressed: _loadPaymentMethods,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.onboardingCyan,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+            ),
+            child: const Text('Retry'),
+          ),
+        ],
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:auto_hub_app/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class HomeAppBar extends StatelessWidget {
@@ -81,77 +82,91 @@ class HomeAppBar extends StatelessWidget {
           Row(
             children: [
               // Notification bell
-              Stack(
-                children: [
-                  Container(
-                    width: 36.w,
-                    height: 36.h,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1C2330),
-                      borderRadius: BorderRadius.circular(16.r),
-                      border: Border.all(
-                        color: const Color(0x12FFFFFF),
-                        width: 0.8,
-                      ),
-                    ),
-                    child: Center(
-                      child: SvgPicture.asset(
-                        'assets/icons/ic_home_bell.svg',
-                        width: 16.w,
-                        height: 16.h,
-                      ),
-                    ),
-                  ),
-                  // Notification dot
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: Container(
-                      width: 8.w,
-                      height: 8.h,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0DA0CE),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(
-                              0xFF0DA0CE,
-                            ).withValues(alpha: 0.6),
-                            blurRadius: 6,
+              Semantics(
+                button: true,
+                label: 'Notifications',
+                child: GestureDetector(
+                  onTap: () => context.push('/live-chats'),
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 36.w,
+                        height: 36.h,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1C2330),
+                          borderRadius: BorderRadius.circular(16.r),
+                          border: Border.all(
+                            color: const Color(0x12FFFFFF),
+                            width: 0.8,
                           ),
-                        ],
+                        ),
+                        child: Center(
+                          child: SvgPicture.asset(
+                            'assets/icons/ic_home_bell.svg',
+                            width: 16.w,
+                            height: 16.h,
+                          ),
+                        ),
                       ),
-                    ),
+                      // Notification dot
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: Container(
+                          width: 8.w,
+                          height: 8.h,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0DA0CE),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(
+                                  0xFF0DA0CE,
+                                ).withValues(alpha: 0.6),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
               SizedBox(width: 10.w),
               // User avatar
-              Container(
-                width: 36.w,
-                height: 36.h,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF0DA0CE), Color(0xFF0B8FB5)],
-                  ),
-                  borderRadius: BorderRadius.circular(16.r),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF0DA0CE).withValues(alpha: 0.35),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+              Semantics(
+                button: true,
+                label: 'Profile',
+                child: GestureDetector(
+                  onTap: () => context.push('/account-details'),
+                  child: Container(
+                    width: 36.w,
+                    height: 36.h,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF0DA0CE), Color(0xFF0B8FB5)],
+                      ),
+                      borderRadius: BorderRadius.circular(16.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF0DA0CE).withValues(alpha: 0.35),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'AH',
-                  style: GoogleFonts.inter(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
+                    alignment: Alignment.center,
+                    child: Text(
+                      'AH',
+                      style: GoogleFonts.inter(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
               ),

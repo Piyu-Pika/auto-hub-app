@@ -1,25 +1,23 @@
+import 'package:auto_hub_app/core/theme/app_colors.dart';
+import 'package:auto_hub_app/features/home/domain/entities/home_feed_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:auto_hub_app/core/theme/app_colors.dart';
 
 class HomeCategorySection extends StatelessWidget {
-  const HomeCategorySection({super.key});
+  const HomeCategorySection({super.key, this.categories});
 
-  static const _categories = [
-    _Category(emoji: '🔧', name: 'Engine', count: '1,284'),
-    _Category(emoji: '🚗', name: 'Body', count: '876'),
-    _Category(emoji: '⚡', name: 'Electrical', count: '543'),
-    _Category(emoji: '🪑', name: 'Interior', count: '429'),
-    _Category(emoji: '🔩', name: 'Suspension', count: '318'),
-    _Category(emoji: '❄️', name: 'Cooling', count: '207'),
-    _Category(emoji: '🛑', name: 'Brakes', count: '394'),
-    _Category(emoji: '⚙️', name: 'Transmission', count: '162'),
-  ];
+  final List<HomeCategoryEntity>? categories;
 
   @override
   Widget build(BuildContext context) {
+    final items = categories ?? const <HomeCategoryEntity>[];
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -29,36 +27,47 @@ class HomeCategorySection extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Browse by Category',
-                style: GoogleFonts.inter(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFFF0F6FC),
-                  letterSpacing: -0.3,
+              Expanded(
+                child: Text(
+                  'Browse by Category',
+                  style: GoogleFonts.inter(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFFF0F6FC),
+                    letterSpacing: -0.3,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Row(
-                children: [
-                  Text(
-                    'See all',
-                    style: GoogleFonts.inter(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF0DA0CE),
-                    ),
+              Semantics(
+                button: true,
+                label: 'See all categories',
+                child:GestureDetector(
+                  onTap: () => context.push('/browse'),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'See all',
+                        style: GoogleFonts.inter(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF0DA0CE),
+                        ),
+                      ),
+                      SizedBox(width: 2.w),
+                      SvgPicture.asset(
+                        'assets/icons/ic_chevron_right.svg',
+                        width: 12.w,
+                        height: 12.h,
+                        colorFilter: const ColorFilter.mode(
+                          Color(0xFF0DA0CE),
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(width: 2.w),
-                  SvgPicture.asset(
-                    'assets/icons/ic_chevron_right.svg',
-                    width: 12.w,
-                    height: 12.h,
-                    colorFilter: const ColorFilter.mode(
-                      Color(0xFF0DA0CE),
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
@@ -68,14 +77,14 @@ class HomeCategorySection extends StatelessWidget {
 
         // Horizontal scrollable categories
         SizedBox(
-          height: 106.h,
+          height: 126.h,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: EdgeInsets.only(left: 20.w),
-            itemCount: _categories.length,
-            separatorBuilder: (_, __) => SizedBox(width: 12.w),
+            itemCount: items.length,
+            separatorBuilder: (_, _) => SizedBox(width: 12.w),
             itemBuilder: (context, index) {
-              return _CategoryCard(category: _categories[index]);
+              return _CategoryCard(category: items[index]);
             },
           ),
         ),
@@ -85,68 +94,83 @@ class HomeCategorySection extends StatelessWidget {
 }
 
 class _CategoryCard extends StatelessWidget {
-  final _Category category;
-
   const _CategoryCard({required this.category});
+
+  final HomeCategoryEntity category;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 76.w,
-      decoration: BoxDecoration(
-        color: const Color(0xFF161B22),
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(
-          color: const Color(0x12FFFFFF),
-          width: 0.8,
+    return Semantics(
+      button: true,
+      label: '${category.name}, ${category.partCount} parts',
+      child:GestureDetector(
+        onTap: () => context.push('/browse'),
+        child: Container(
+          width: 76.w,
+          decoration: BoxDecoration(
+            color: const Color(0xFF161B22),
+            borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(
+              color: const Color(0x12FFFFFF),
+              width: 0.8,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _CategoryIcon(iconUrl: category.iconUrl),
+              SizedBox(height: 8.h),
+              Text(
+                category.name,
+                style: GoogleFonts.inter(
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFFF0F6FC),
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+              SizedBox(height: 1.h),
+              Text(
+                category.partCount.toString(),
+                style: GoogleFonts.inter(
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textTertiary,
+                ),
+              ),
+            ],
+          ),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            category.emoji,
-            style: TextStyle(fontSize: 24.sp),
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            category.name,
-            style: GoogleFonts.inter(
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFFF0F6FC),
-            ),
-          ),
-          SizedBox(height: 1.h),
-          Text(
-            category.count,
-            style: GoogleFonts.inter(
-              fontSize: 10.sp,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textTertiary,
-            ),
-          ),
-        ],
       ),
     );
   }
 }
 
-class _Category {
-  final String emoji;
-  final String name;
-  final String count;
+class _CategoryIcon extends StatelessWidget {
+  const _CategoryIcon({required this.iconUrl});
 
-  const _Category({
-    required this.emoji,
-    required this.name,
-    required this.count,
-  });
+  final String? iconUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = iconUrl ?? '';
+    if (url.isEmpty) {
+      return Icon(
+        Icons.category,
+        size: 24.sp,
+        color: AppColors.onboardingCyan,
+      );
+    }
+    if (url.startsWith('http')) {
+      return SvgPicture.network(url, width: 24.w, height: 24.h);
+    }
+    return SvgPicture.asset(url, width: 24.w, height: 24.h);
+  }
 }

@@ -1,6 +1,7 @@
 import 'package:auto_hub_app/core/errors/exceptions.dart';
 import 'package:auto_hub_app/features/vin/data/models/vin_decode_model.dart';
 import 'package:dio/dio.dart';
+import 'package:injectable/injectable.dart';
 
 abstract interface class VinRemoteDatasource {
   Future<VinDecodeModel> decodeVin(String vin);
@@ -9,6 +10,7 @@ abstract interface class VinRemoteDatasource {
 /// Calls the free NHTSA vPIC API — no API key required.
 ///
 /// Docs: https://vpic.nhtsa.dot.gov/api/
+@LazySingleton(as: VinRemoteDatasource)
 class VinRemoteDatasourceImpl implements VinRemoteDatasource {
   VinRemoteDatasourceImpl(this._dio);
 

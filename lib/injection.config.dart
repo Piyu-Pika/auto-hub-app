@@ -79,6 +79,16 @@ import 'package:auto_hub_app/features/settings/data/repositories/settings_reposi
     as _i401;
 import 'package:auto_hub_app/features/splash/presentation/bloc/splash_cubit.dart'
     as _i1035;
+import 'package:auto_hub_app/features/vin/data/datasources/vin_remote_datasource.dart'
+    as _i108;
+import 'package:auto_hub_app/features/vin/data/repositories/vin_repository_impl.dart'
+    as _i795;
+import 'package:auto_hub_app/features/vin/domain/repositories/vin_repository.dart'
+    as _i683;
+import 'package:auto_hub_app/features/vin/domain/usecases/decode_vin_usecase.dart'
+    as _i961;
+import 'package:auto_hub_app/features/vin/presentation/cubit/vin_cubit.dart'
+    as _i467;
 import 'package:auto_hub_app/features/your_addresses/data/datasources/address_remote_datasource.dart'
     as _i818;
 import 'package:auto_hub_app/features/your_addresses/data/repositories/address_repository_impl.dart'
@@ -97,6 +107,12 @@ extension GetItInjectableX on _i174.GetIt {
   }) {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final networkModule = _$NetworkModule();
+    gh.factory<_i1035.SplashCubit>(
+      () => _i1035.SplashCubit(
+        gh<_i22.AuthRepository>(),
+        gh<_i991.TokenStorage>(),
+      ),
+    );
     gh.lazySingleton<_i991.TokenStorage>(() => _i991.InMemoryTokenStorage());
     gh.lazySingleton<_i361.Dio>(
       () => networkModule.dio(gh<_i991.TokenStorage>()),
@@ -122,9 +138,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i1067.AccountRemoteDatasource>(
       () => _i1067.AccountRemoteDatasourceImpl(gh<_i361.Dio>()),
     );
-    gh.factory<_i1035.SplashCubit>(
-      () => _i1035.SplashCubit(gh<_i22.AuthRepository>()),
-    );
     gh.lazySingleton<_i35.OrdersRepository>(
       () => _i35.OrdersRepository(gh<_i319.OrderRemoteDatasource>()),
     );
@@ -136,6 +149,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i734.SettingsRemoteDatasource>(
       () => _i734.SettingsRemoteDatasourceImpl(gh<_i361.Dio>()),
+    );
+    gh.lazySingleton<_i108.VinRemoteDatasource>(
+      () => _i108.VinRemoteDatasourceImpl(gh<_i361.Dio>()),
     );
     gh.lazySingleton<_i179.BrowseRemoteDatasource>(
       () => _i179.BrowseRemoteDatasourceImpl(gh<_i361.Dio>()),
@@ -183,6 +199,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i275.PaymentRemoteDatasource>(),
       ),
     );
+    gh.lazySingleton<_i683.VinRepository>(
+      () => _i795.VinRepositoryImpl(gh<_i108.VinRemoteDatasource>()),
+    );
     gh.lazySingleton<_i444.JunkRepository>(
       () => _i503.JunkRepositoryImpl(gh<_i518.JunkRemoteDatasource>()),
     );
@@ -191,6 +210,12 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i214.JunkCubit>(
       () => _i214.JunkCubit(gh<_i444.JunkRepository>()),
+    );
+    gh.lazySingleton<_i961.DecodeVinUsecase>(
+      () => _i961.DecodeVinUsecase(gh<_i683.VinRepository>()),
+    );
+    gh.factory<_i467.VinCubit>(
+      () => _i467.VinCubit(gh<_i961.DecodeVinUsecase>()),
     );
     return this;
   }

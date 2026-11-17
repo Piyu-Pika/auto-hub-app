@@ -60,6 +60,8 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _showLanguageBottomSheet(String currentLang) async {
+    final languages = await _repository.getLanguages();
+    if (!mounted) return;
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -69,6 +71,7 @@ class _SettingsPageState extends State<SettingsPage> {
         onLanguageSelected: (langName, flag) {
           _repository.updateLanguage(langName, flag);
         },
+        languages: languages,
       ),
     );
   }

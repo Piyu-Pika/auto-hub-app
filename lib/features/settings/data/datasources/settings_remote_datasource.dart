@@ -72,15 +72,13 @@ class SettingsRemoteDatasourceImpl implements SettingsRemoteDatasource {
         return (envelope['data'] as List)
             .cast<Map<String, dynamic>>();
       }
-      return const [
-        {'code': 'en', 'name': 'English', 'flag': '🇺🇸'},
-        {'code': 'es', 'name': 'Español', 'flag': '🇲🇽'},
-      ];
-    } catch (_) {
-      return const [
-        {'code': 'en', 'name': 'English', 'flag': '🇺🇸'},
-        {'code': 'es', 'name': 'Español', 'flag': '🇲🇽'},
-      ];
+      return const <Map<String, dynamic>>[];
+    } on DioException catch (e) {
+      if (e.error is ServerException) throw e.error!;
+      throw ServerException(
+        message: e.message ?? 'Failed to load languages.',
+        statusCode: e.response?.statusCode,
+      );
     }
   }
 

@@ -7,20 +7,13 @@ class LanguageBottomSheet extends StatelessWidget {
   const LanguageBottomSheet({
     required this.selectedLanguage,
     required this.onLanguageSelected,
+    required this.languages,
     super.key,
   });
 
   final String selectedLanguage;
   final void Function(String languageName, String flag) onLanguageSelected;
-
-  static const List<Map<String, String>> languages = [
-    {'name': 'English', 'flag': '🇺🇸'},
-    {'name': 'Español', 'flag': '🇪🇸'},
-    {'name': 'Français', 'flag': '🇫🇷'},
-    {'name': 'Deutsch', 'flag': '🇩🇪'},
-    {'name': 'Português', 'flag': '🇧🇷'},
-    {'name': '中文', 'flag': '🇨🇳'},
-  ];
+  final List<Map<String, dynamic>> languages;
 
   @override
   Widget build(BuildContext context) {
@@ -88,77 +81,116 @@ class LanguageBottomSheet extends StatelessWidget {
           ),
           SizedBox(height: 24.h),
 
-          // Language list
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: languages.length,
-            separatorBuilder: (context, index) => Divider(
-              color: Colors.white.withValues(alpha: 0.05),
-              thickness: 0.8,
-              height: 1.h,
-            ),
-            itemBuilder: (context, index) {
-              final lang = languages[index];
-              final name = lang['name']!;
-              final flag = lang['flag']!;
-              final isSelected = name == selectedLanguage;
+          // Language list or empty state
+          if (languages.isEmpty)
+            _EmptyLanguageState()
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: languages.length,
+              separatorBuilder: (context, index) => Divider(
+                color: Colors.white.withValues(alpha: 0.05),
+                thickness: 0.8,
+                height: 1.h,
+              ),
+              itemBuilder: (context, index) {
+                final lang = languages[index];
+                final name = lang['name'] as String? ?? lang['code'] as String? ?? '';
+                final flag = lang['flag'] as String? ?? '';
+                final isSelected = name == selectedLanguage;
 
-              return InkWell(
-                onTap: () {
-                  onLanguageSelected(name, flag);
-                  Navigator.of(context).pop();
-                },
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16.h),
-                  child: Row(
-                    children: [
-                      Text(
-                        flag,
-                        style: TextStyle(fontSize: 18.sp),
-                      ),
-                      SizedBox(width: 14.w),
-                      Expanded(
-                        child: Text(
-                          name,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: isSelected
-                                ? AppColors.onboardingCyan
-                                : AppColors.onboardingTextPrimary,
-                            fontSize: 15.sp,
-                            fontWeight:
-                                isSelected ? FontWeight.w700 : FontWeight.w500,
+                return InkWell(
+                  onTap: () {
+                    onLanguageSelected(name, flag);
+                    Navigator.of(context).pop();
+                  },
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16.h),
+                    child: Row(
+                      children: [
+                        Text(
+                          flag,
+                          style: TextStyle(fontSize: 18.sp),
+                        ),
+                        SizedBox(width: 14.w),
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: isSelected
+                                  ? AppColors.onboardingCyan
+                                  : AppColors.onboardingTextPrimary,
+                              fontSize: 15.sp,
+                              fontWeight:
+                                  isSelected ? FontWeight.w700 : FontWeight.w500,
+                            ),
                           ),
                         ),
-                      ),
-                      // Custom Radio style matching the design
-                      Container(
-                        width: 20.w,
-                        height: 20.h,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isSelected
-                                ? AppColors.onboardingCyan
-                                : const Color(0xFF2D333B),
-                            width: 2.w,
+                        // Custom Radio style matching the design
+                        Container(
+                          width: 20.w,
+                          height: 20.h,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.onboardingCyan
+                                  : const Color(0xFF2D333B),
+                              width: 2.w,
+                            ),
                           ),
+                          padding: EdgeInsets.all(3.r),
+                          child: isSelected
+                              ? Container(
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: AppColors.onboardingCyan,
+                                  ),
+                                )
+                              : null,
                         ),
-                        padding: EdgeInsets.all(3.r),
-                        child: isSelected
-                            ? Container(
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppColors.onboardingCyan,
-                                ),
-                              )
-                            : null,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyLanguageState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 32.h),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.language_outlined,
+            color: AppColors.onboardingTextSecondary,
+            size: 48.sp,
+          ),
+          SizedBox(height: 16.h),
+          Text(
+            'No languages available',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.onboardingTextSecondary,
+              fontSize: 15.sp,
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            'Please check your connection and try again.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.onboardingTextSecondary.withValues(alpha: 0.7),
+              fontSize: 12.sp,
+            ),
           ),
         ],
       ),

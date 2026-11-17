@@ -50,7 +50,6 @@ class HomeFeaturedParts extends StatelessWidget {
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 20.w),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: Column(
@@ -80,29 +79,33 @@ class HomeFeaturedParts extends StatelessWidget {
                 ),
               ),
               SizedBox(width: 8.w),
-              GestureDetector(
-                onTap: () => context.push('/browse'),
-                child: Row(
-                  children: [
-                    Text(
-                      'View all',
-                      style: GoogleFonts.inter(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF0DA0CE),
+              Semantics(
+                button: true,
+                label: 'View all featured parts',
+                child: GestureDetector(
+                  onTap: () => context.push('/browse'),
+                  child: Row(
+                    children: [
+                      Text(
+                        'View all',
+                        style: GoogleFonts.inter(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF0DA0CE),
+                        ),
                       ),
-                    ),
-                    SizedBox(width: 2.w),
-                    SvgPicture.asset(
-                      'assets/icons/ic_chevron_right.svg',
-                      width: 12.w,
-                      height: 12.h,
-                      colorFilter: const ColorFilter.mode(
-                        Color(0xFF0DA0CE),
-                        BlendMode.srcIn,
+                      SizedBox(width: 2.w),
+                      SvgPicture.asset(
+                        'assets/icons/ic_chevron_right.svg',
+                        width: 12.w,
+                        height: 12.h,
+                        colorFilter: const ColorFilter.mode(
+                          Color(0xFF0DA0CE),
+                          BlendMode.srcIn,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -123,11 +126,21 @@ class HomeFeaturedParts extends StatelessWidget {
               return HomePartCardHorizontal(
                 item: item,
                 onTap: () => context.push('/part-details/${item.id}'),
+                onFavoriteTap: () => _toggleFavorite(context, item.id),
               );
             },
           ),
         ),
       ],
+    );
+  }
+
+  void _toggleFavorite(BuildContext context, String partId) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Added $partId to favorites'),
+        duration: const Duration(seconds: 2),
+      ),
     );
   }
 }

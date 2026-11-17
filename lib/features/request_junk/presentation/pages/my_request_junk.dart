@@ -25,6 +25,7 @@ class _MyRequestJunkState extends State<MyRequestJunk> {
   String _selectedTab = 'All';
   List<JunkRequest> _allRequests = [];
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -33,20 +34,33 @@ class _MyRequestJunkState extends State<MyRequestJunk> {
   }
 
   Future<void> _loadRequests() async {
-    setState(() => _isLoading = true);
-    final repo = getIt<JunkRepository>();
-    final result = await repo.getJunkRequests();
-    if (mounted) {
-      result.fold(
-        (failure) => setState(() {
-          _allRequests = [];
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final repo = getIt<JunkRepository>();
+      final result = await repo.getJunkRequests();
+      if (mounted) {
+        result.fold(
+          (failure) => setState(() {
+            _allRequests = [];
+            _isLoading = false;
+            _errorMessage = 'Failed to load requests. Please try again.';
+          }),
+          (requests) => setState(() {
+            _allRequests = requests;
+            _isLoading = false;
+          }),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
           _isLoading = false;
-        }),
-        (requests) => setState(() {
-          _allRequests = requests;
-          _isLoading = false;
-        }),
-      );
+          _errorMessage = 'Failed to load requests. Please try again.';
+        });
+      }
     }
   }
      
@@ -105,6 +119,64 @@ class _MyRequestJunkState extends State<MyRequestJunk> {
                         valueColor: AlwaysStoppedAnimation<Color>(
                           AppColors.onboardingCyan,
                         ),
+                      ),
+                    )
+                  else if (_errorMessage != null)
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 80.w,
+                            height: 80.h,
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.error.withValues(alpha: 0.3),
+                                width: 0.8,
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.error_outline_rounded,
+                              size: 32.sp,
+                              color: AppColors.error,
+                            ),
+                          ),
+                          SizedBox(height: 18.h),
+                          Text(
+                            'Something went wrong',
+                            style: AppTextStyles.headlineSmall.copyWith(
+                              color: AppColors.onboardingTextPrimary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16.sp,
+                            ),
+                          ),
+                          SizedBox(height: 8.h),
+                          Text(
+                            _errorMessage ?? 'Failed to load requests. Please try again.',
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.onboardingTextSecondary,
+                              fontSize: 13.sp,
+                              height: 1.4,
+                            ),
+                          ),
+                          SizedBox(height: 20.h),
+                          ElevatedButton(
+                            onPressed: _loadRequests,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.onboardingCyan,
+                              foregroundColor: Colors.black,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12.r),
+                              ),
+                              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+                            ),
+                            child: const Text('Retry'),
+                          ),
+                        ],
                       ),
                     )
                   else if (requests.isEmpty)

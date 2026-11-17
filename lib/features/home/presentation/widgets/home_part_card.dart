@@ -41,12 +41,14 @@ class HomePartCardHorizontal extends StatelessWidget {
   final PartItemData item;
   final double width;
   final VoidCallback? onTap;
+  final VoidCallback? onFavoriteTap;
 
   const HomePartCardHorizontal({
     super.key,
     required this.item,
     this.width = 284,
     this.onTap,
+    this.onFavoriteTap,
   });
 
   @override
@@ -75,7 +77,11 @@ class HomePartCardHorizontal extends StatelessWidget {
         child: Column(
           children: [
             // Image section
-            _PartImageSection(item: item, height: 150),
+            _PartImageSection(
+              item: item,
+              height: 150,
+              onFavoriteTap: onFavoriteTap,
+            ),
             // Info section
             Expanded(
               child: _PartInfoSection(item: item),
@@ -91,11 +97,13 @@ class HomePartCardHorizontal extends StatelessWidget {
 class HomePartCardVertical extends StatelessWidget {
   final PartItemData item;
   final VoidCallback? onTap;
+  final VoidCallback? onFavoriteTap;
 
   const HomePartCardVertical({
     super.key,
     required this.item,
     this.onTap,
+    this.onFavoriteTap,
   });
 
   @override
@@ -124,7 +132,11 @@ class HomePartCardVertical extends StatelessWidget {
           child: Column(
             children: [
               // Image section (taller for vertical cards)
-              _PartImageSection(item: item, height: 195),
+              _PartImageSection(
+                item: item,
+                height: 195,
+                onFavoriteTap: onFavoriteTap,
+              ),
               // Info section
               _PartInfoSection(item: item),
             ],
@@ -138,8 +150,13 @@ class HomePartCardVertical extends StatelessWidget {
 class _PartImageSection extends StatelessWidget {
   final PartItemData item;
   final double height;
+  final VoidCallback? onFavoriteTap;
 
-  const _PartImageSection({required this.item, required this.height});
+  const _PartImageSection({
+    required this.item,
+    required this.height,
+    this.onFavoriteTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -183,29 +200,36 @@ class _PartImageSection extends StatelessWidget {
           Positioned(
             top: 12,
             right: 12,
-            child: Container(
-              width: 36.w,
-              height: 36.h,
-              decoration: BoxDecoration(
-                color: const Color(0xFF0D1117).withValues(alpha: 0.7),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.12),
-                  width: 0.8,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+            child: Semantics(
+              button: true,
+              label: 'Save to favorites',
+              child: GestureDetector(
+                onTap: onFavoriteTap,
+                child: Container(
+                  width: 36.w,
+                  height: 36.h,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0D1117).withValues(alpha: 0.7),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      width: 0.8,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              alignment: Alignment.center,
-              child: SvgPicture.asset(
-                'assets/icons/ic_heart.svg',
-                width: 14.w,
-                height: 14.h,
+                  alignment: Alignment.center,
+                  child: SvgPicture.asset(
+                    'assets/icons/ic_heart.svg',
+                    width: 14.w,
+                    height: 14.h,
+                  ),
+                ),
               ),
             ),
           ),

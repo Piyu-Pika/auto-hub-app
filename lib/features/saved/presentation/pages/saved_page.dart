@@ -21,6 +21,7 @@ class SavedPage extends StatefulWidget {
 class _SavedPageState extends State<SavedPage> {
   List<ProductPartItem> _savedParts = [];
   bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -29,7 +30,10 @@ class _SavedPageState extends State<SavedPage> {
   }
 
   Future<void> _fetchSavedParts() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
     try {
       final datasource = getIt<BrowseRemoteDatasource>();
       final items = await datasource.getSavedParts();
@@ -41,7 +45,10 @@ class _SavedPageState extends State<SavedPage> {
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Failed to load saved parts. Please try again.';
+        });
       }
     }
   }

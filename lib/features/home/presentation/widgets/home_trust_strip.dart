@@ -1,31 +1,29 @@
+import 'package:auto_hub_app/core/theme/app_colors.dart';
+import 'package:auto_hub_app/features/home/domain/entities/home_feed_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:auto_hub_app/core/theme/app_colors.dart';
 
 class HomeTrustStrip extends StatelessWidget {
-  const HomeTrustStrip({super.key});
+  const HomeTrustStrip({super.key, this.trustItems});
+
+  final List<TrustStripItemEntity>? trustItems;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
+    final items = trustItems ?? const <TrustStripItemEntity>[];
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Semantics(
+      label: 'Trust badges',
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _TrustItem(
-            icon: 'assets/icons/ic_verified_yards.svg',
-            label: 'Verified Yards',
-          ),
-          _TrustItem(
-            icon: 'assets/icons/ic_fast_shipping.svg',
-            label: 'Fast Shipping',
-          ),
-          _TrustItem(
-            icon: 'assets/icons/ic_top_rated.svg',
-            label: 'Top Rated',
-          ),
+          for (final item in items)
+            _TrustItem(icon: item.icon, label: item.label),
         ],
       ),
     );
@@ -33,31 +31,34 @@ class HomeTrustStrip extends StatelessWidget {
 }
 
 class _TrustItem extends StatelessWidget {
+  const _TrustItem({required this.icon, required this.label});
+
   final String icon;
   final String label;
 
-  const _TrustItem({required this.icon, required this.label});
-
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SvgPicture.asset(
-          icon,
-          width: 16.w,
-          height: 16.h,
-        ),
-        SizedBox(height: 4.h),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 9.sp,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textTertiary,
+    return Semantics(
+      label: label,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SvgPicture.asset(
+            icon,
+            width: 16.w,
+            height: 16.h,
           ),
-        ),
-      ],
+          SizedBox(height: 4.h),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 9.sp,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textTertiary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -2,7 +2,9 @@ import 'package:auto_hub_app/core/errors/failures.dart';
 import 'package:auto_hub_app/features/vin/domain/entities/vin_decode_result.dart';
 import 'package:auto_hub_app/features/vin/domain/repositories/vin_repository.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:injectable/injectable.dart';
 
+@lazySingleton
 class DecodeVinUsecase {
   const DecodeVinUsecase(this._repository);
 

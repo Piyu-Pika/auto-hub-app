@@ -19,7 +19,8 @@ class LiveChatPage extends StatefulWidget {
 class _LiveChatPageState extends State<LiveChatPage> {
   late final MessagesRepository _repository;
   List<LiveChatConversation> _conversations = [];
-  bool _isLoading = true;
+  bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -29,13 +30,25 @@ class _LiveChatPageState extends State<LiveChatPage> {
   }
 
   Future<void> _loadConversations() async {
-    setState(() => _isLoading = true);
-    final convos = await _repository.fetchConversations();
-    if (mounted) {
-      setState(() {
-        _conversations = convos;
-        _isLoading = false;
-      });
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final convos = await _repository.fetchConversations();
+      if (mounted) {
+        setState(() {
+          _conversations = convos;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Failed to load conversations. Please try again.';
+        });
+      }
     }
   }
 
@@ -76,9 +89,11 @@ class _LiveChatPageState extends State<LiveChatPage> {
                         ),
                       ),
                     )
-                  : _conversations.isEmpty
-                      ? _buildEmptyState()
-                      : _buildConversationsSection(context),
+                  : _errorMessage != null
+                      ? _buildErrorState()
+                      : _conversations.isEmpty
+                          ? _buildEmptyState()
+                          : _buildConversationsSection(context),
             ),
           ],
         ),
@@ -268,6 +283,66 @@ class _LiveChatPageState extends State<LiveChatPage> {
                 },
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80.w,
+            height: 80.h,
+            decoration: BoxDecoration(
+              color: AppColors.error.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.error.withValues(alpha: 0.3),
+                width: 0.8,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              Icons.error_outline_rounded,
+              size: 32.sp,
+              color: AppColors.error,
+            ),
+          ),
+          SizedBox(height: 18.h),
+          Text(
+            'Something went wrong',
+            style: AppTextStyles.headlineSmall.copyWith(
+              color: AppColors.onboardingTextPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 16.sp,
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            _errorMessage ?? 'Failed to load conversations. Please try again.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.onboardingTextSecondary,
+              fontSize: 13.sp,
+              height: 1.4,
+            ),
+          ),
+          SizedBox(height: 20.h),
+          ElevatedButton(
+            onPressed: _loadConversations,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.onboardingCyan,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+            ),
+            child: const Text('Retry'),
           ),
         ],
       ),

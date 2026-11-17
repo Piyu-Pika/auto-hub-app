@@ -65,7 +65,7 @@ abstract final class AppColors {
   static const Color error = Color(0xFFEF4444);
 
   /// Info — blue.
-  static const Color info = Color(0xFF3B82F6);
+  static const Color info = Color(0xFF0A84FF);
 
   // ── Border & Divider ──────────────────────────────────────────────────
 

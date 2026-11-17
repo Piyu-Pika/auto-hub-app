@@ -21,6 +21,7 @@ class _YourAddressesPageState extends State<YourAddressesPage> {
   late final AddressRepository _repository;
   List<Address> _addresses = [];
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -30,12 +31,22 @@ class _YourAddressesPageState extends State<YourAddressesPage> {
   }
 
   Future<void> _loadAddresses() async {
-    final addresses = await _repository.getAddresses();
-    if (mounted) {
-      setState(() {
-        _addresses = addresses;
-        _isLoading = false;
-      });
+    try {
+      final addresses = await _repository.getAddresses();
+      if (mounted) {
+        setState(() {
+          _addresses = addresses;
+          _isLoading = false;
+          _errorMessage = null;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Failed to load addresses. Please try again.';
+        });
+      }
     }
   }
 
@@ -125,22 +136,24 @@ class _YourAddressesPageState extends State<YourAddressesPage> {
                 constraints: const BoxConstraints(maxWidth: 600),
                 child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
-                    : SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 24.h),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (_addresses.isEmpty) ...[
-                              _buildEmptyState(),
-                            ] else ...[
-                              _buildAddressesCard(),
-                            ],
-                            SizedBox(height: 20.h),
-                            _buildAddButton(),
-                          ],
-                        ),
-                      ),
+                    : _errorMessage != null
+                        ? _buildErrorState()
+                        : SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 24.h),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (_addresses.isEmpty) ...[
+                                  _buildEmptyState(),
+                                ] else ...[
+                                  _buildAddressesCard(),
+                                ],
+                                SizedBox(height: 20.h),
+                                _buildAddButton(),
+                              ],
+                            ),
+                          ),
               ),
             ),
           ],
@@ -343,6 +356,66 @@ class _YourAddressesPageState extends State<YourAddressesPage> {
               fontSize: 13.sp,
               height: 1.4,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80.w,
+            height: 80.h,
+            decoration: BoxDecoration(
+              color: AppColors.error.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.error.withValues(alpha: 0.3),
+                width: 0.8,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              Icons.cloud_off_rounded,
+              size: 32.sp,
+              color: AppColors.error,
+            ),
+          ),
+          SizedBox(height: 18.h),
+          Text(
+            'Something went wrong',
+            style: AppTextStyles.headlineSmall.copyWith(
+              color: AppColors.onboardingTextPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 16.sp,
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            _errorMessage ?? 'Failed to load addresses. Please try again.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.onboardingTextSecondary,
+              fontSize: 13.sp,
+              height: 1.4,
+            ),
+          ),
+          SizedBox(height: 20.h),
+          ElevatedButton(
+            onPressed: _loadAddresses,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.onboardingCyan,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+            ),
+            child: const Text('Retry'),
           ),
         ],
       ),

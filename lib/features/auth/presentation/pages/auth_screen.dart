@@ -129,39 +129,6 @@ class _AuthScreenState extends State<AuthScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SizedBox(height: 12.h),
-                    // Back Button
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: GestureDetector(
-                        onTap: () {
-                          if (context.canPop()) {
-                            context.pop();
-                          }
-                        },
-                        child: Container(
-                          width: 36.w,
-                          height: 36.w,
-                          decoration: BoxDecoration(
-                            color: AppColors.onboardingSurfaceLight,
-                            borderRadius: BorderRadius.circular(16.r),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.08),
-                              width: 1.w,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.3),
-                                blurRadius: 4.r,
-                                offset: Offset(0, 1.h),
-                              ),
-                            ],
-                          ),
-                          padding: EdgeInsets.all(10.w),
-                          child: const Icon(AppIcons.arrowLeft),
-                        ),
-                      ),
-                    ),
                     SizedBox(height: 32.h),
 
                     // Header Texts (Animated based on tab)

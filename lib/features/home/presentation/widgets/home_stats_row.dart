@@ -17,16 +17,17 @@ class HomeStatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (stats != null && stats!.isNotEmpty) {
+    final items = stats;
+    if (items != null && items.isNotEmpty) {
       return Padding(
         padding: EdgeInsets.symmetric(horizontal: 20.w),
         child: Row(
           children: [
-            for (var i = 0; i < stats!.length; i++) ...[
+            for (var i = 0; i < items.length; i++) ...[
               if (i > 0) SizedBox(width: 11.w),
               _StatCard(
-                value: stats![i].value,
-                label: stats![i].label,
+                value: items[i].value,
+                label: items[i].label,
                 color: _colors[i % _colors.length],
               ),
             ],

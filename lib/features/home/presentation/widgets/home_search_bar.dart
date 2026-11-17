@@ -3,8 +3,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class HomeSearchBar extends StatelessWidget {
-  const HomeSearchBar({super.key});
+class HomeSearchBar extends StatefulWidget {
+  const HomeSearchBar({super.key, this.onSubmitted, this.onTap});
+
+  final ValueChanged<String>? onSubmitted;
+  final VoidCallback? onTap;
+
+  @override
+  State<HomeSearchBar> createState() => _HomeSearchBarState();
+}
+
+class _HomeSearchBarState extends State<HomeSearchBar> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final query = _controller.text.trim();
+    if (query.isEmpty) return;
+    widget.onSubmitted?.call(query);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,43 +59,66 @@ class HomeSearchBar extends StatelessWidget {
             ),
             SizedBox(width: 8.w),
             Expanded(
-              child: Text(
-                'Search part name, make, model...',
+              child: TextField(
+                controller: _controller,
+                onTap: widget.onTap,
+                onSubmitted: (_) => _submit(),
+                textInputAction: TextInputAction.search,
                 style: GoogleFonts.inter(
                   fontSize: 14.sp,
                   fontWeight: FontWeight.w400,
-                  color: const Color(0x80F0F6FC),
+                  color: const Color(0xFFF0F6FC),
                 ),
-                overflow: TextOverflow.ellipsis,
+                cursorColor: const Color(0xFF0DA0CE),
+                decoration: InputDecoration(
+                  hintText: 'Search part name, make, model...',
+                  hintStyle: GoogleFonts.inter(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0x80F0F6FC),
+                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
               ),
             ),
             SizedBox(width: 8.w),
             // Search button
-            Container(
-              width: 68.w,
-              height: 30.h,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment(-0.6, -1.0),
-                  end: Alignment(0.6, 1.0),
-                  colors: [Color(0xFF0DA0CE), Color(0xFF0B8FB5)],
-                ),
-                borderRadius: BorderRadius.circular(14.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF0DA0CE).withValues(alpha: 0.35),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+            Semantics(
+              button: true,
+              label: 'Search',
+              child: GestureDetector(
+                onTap: _submit,
+                child: Container(
+                  width: 68.w,
+                  height: 30.h,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment(-0.6, -1.0),
+                      end: Alignment(0.6, 1.0),
+                      colors: [Color(0xFF0DA0CE), Color(0xFF0B8FB5)],
+                    ),
+                    borderRadius: BorderRadius.circular(14.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF0DA0CE).withValues(alpha: 0.35),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                'Search',
-                style: GoogleFonts.inter(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  alignment: Alignment.center,
+                  child: Text(
+                    'Search',
+                    style: GoogleFonts.inter(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ),

@@ -97,35 +97,35 @@ class ProductCard extends StatelessWidget {
                   Positioned(
                     top: 12.h,
                     right: 12.w,
-                    child: GestureDetector(
-                      onTap: onFavoriteTap,
-                      child: Container(
-                        width: 36.w,
-                        height: 36.h,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0D1117).withValues(alpha: 0.7),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.12),
+                    child: IconButton(
+                      onPressed: onFavoriteTap,
+                      tooltip: part.isFavorite
+                          ? 'Remove from favorites'
+                          : 'Add to favorites',
+                      icon: SvgPicture.asset(
+                        'assets/icons/ic_heart.svg',
+                        width: 14.w,
+                        height: 14.h,
+                        colorFilter: ColorFilter.mode(
+                          part.isFavorite ? AppColors.error : Colors.white,
+                          BlendMode.srcIn,
+                        ),
+                        placeholderBuilder: (context) => const Icon(
+                          Icons.error_outline,
+                          size: 14,
+                        ),
+                      ),
+                      style: IconButton.styleFrom(
+                        backgroundColor:
+                            const Color(0xFF0D1117).withValues(alpha: 0.7),
+                        shape: const CircleBorder(
+                          side: BorderSide(
+                            color: Color(0x1FFFFFFF),
                             width: 0.8,
                           ),
                         ),
-                        alignment: Alignment.center,
-                        child: SvgPicture.asset(
-                          'assets/icons/ic_heart.svg',
-                          width: 14.w,
-                          height: 14.h,
-                          colorFilter: ColorFilter.mode(
-                            part.isFavorite
-                                ? AppColors.error
-                                : Colors.white,
-                            BlendMode.srcIn,
-                          ),
-                          placeholderBuilder: (context) => const Icon(
-                            Icons.error_outline,
-                            size: 14,
-                          ),
-                        ),
+                        padding: EdgeInsets.all(8.r),
+                        minimumSize: Size(36.w, 36.h),
                       ),
                     ),
                   ),

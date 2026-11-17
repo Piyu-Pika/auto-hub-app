@@ -110,10 +110,7 @@ class SettingsRepository {
     try {
       return await _datasource.getLanguages();
     } catch (_) {
-      return const [
-        {'code': 'en', 'name': 'English', 'flag': '🇺🇸'},
-        {'code': 'es', 'name': 'Español', 'flag': '🇲🇽'},
-      ];
+      return const <Map<String, dynamic>>[];
     }
   }
 

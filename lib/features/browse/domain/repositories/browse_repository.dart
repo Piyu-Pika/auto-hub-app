@@ -2,7 +2,15 @@ import 'package:auto_hub_app/features/browse/domain/models/product_part_item.dar
 
 abstract class BrowseRepository {
   Future<List<ProductPartItem>> getParts();
-  
+
+  Future<int> countParts({
+    String? query,
+    List<String>? makes,
+    List<String>? categories,
+    List<String>? conditions,
+    double? maxPrice,
+  });
+
   Future<List<ProductPartItem>> searchParts({
     String? query,
     List<String>? makes,
@@ -12,7 +20,7 @@ abstract class BrowseRepository {
     int page = 1,
     int limit = 20,
   });
-  
+
   Future<List<ProductPartItem>> searchByVin(
     String vin, {
     int page = 1,
@@ -22,6 +30,6 @@ abstract class BrowseRepository {
   Future<Map<String, dynamic>> getPartDetail(String id);
 
   Future<List<ProductPartItem>> getSimilarParts(String id, {int limit = 10});
-  
+
   Future<void> toggleFavorite(String partId);
 }

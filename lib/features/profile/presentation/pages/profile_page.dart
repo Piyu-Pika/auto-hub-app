@@ -1,18 +1,57 @@
-import 'dart:math' as math;
+import 'dart:async';
 
 import 'package:auto_hub_app/core/constants/app_icons.dart';
 import 'package:auto_hub_app/core/theme/app_colors.dart';
 import 'package:auto_hub_app/core/theme/app_text_styles.dart';
+import 'package:auto_hub_app/features/account_details/data/repositories/account_repository.dart';
+import 'package:auto_hub_app/features/account_details/domain/models/user_profile.dart';
 import 'package:auto_hub_app/features/profile/presentation/models/profile_menu_models.dart';
 import 'package:auto_hub_app/features/profile/presentation/widgets/profile_menu_section_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  UserProfile? _userProfile;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadProfile());
+  }
+
+  Future<void> _loadProfile() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final profile = await AccountRepository().getUserProfile();
+      if (mounted) {
+        setState(() {
+          _userProfile = profile;
+          _isLoading = false;
+        });
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   List<ProfileMenuSectionData> _buildSections(
     BuildContext context,
@@ -105,7 +144,7 @@ class ProfilePage extends StatelessWidget {
         ..showSnackBar(
           const SnackBar(content: Text('This section is coming soon')),
         );
-    },);
+    });
 
     return Scaffold(
       backgroundColor: AppColors.onboardingBackground,
@@ -121,51 +160,67 @@ class ProfilePage extends StatelessWidget {
               },
             ),
             Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.only(bottom: 24.h),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20.w),
-                  child: Column(
-                    children: [
-                      SizedBox(height: 18.h),
-                      const _ProfileIdentityHeader(
-                        name: 'Mike Johnson',
-                        initials: 'MJ',
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.onboardingCyan,
                       ),
-                      SizedBox(height: 27.h),
-                      for (var index = 0; index < sections.length; index++)
-                        Padding(
-                          padding: EdgeInsets.only(bottom: 12.h),
-                          child: ProfileMenuSectionCard(
-                            section: sections[index],
-                          ),
-                        ),
-                      _SignOutButton(
-                        onTap: () {
-                          ScaffoldMessenger.of(context)
-                            ..hideCurrentSnackBar()
-                            ..showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Sign out action coming soon',
+                    )
+                  : _error != null
+                  ? _ErrorState(
+                      message: _error!,
+                      onRetry: _loadProfile,
+                    )
+                  : _userProfile == null
+                  ? const _EmptyState()
+                  : SingleChildScrollView(
+                      padding: EdgeInsets.only(bottom: 24.h),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20.w),
+                        child: Column(
+                          children: [
+                            SizedBox(height: 18.h),
+                            _ProfileIdentityHeader(
+                              name: _userProfile!.fullName,
+                              initials: _userProfile!.initials,
+                              isVerified: _userProfile!.isVerified,
+                            ),
+                            SizedBox(height: 27.h),
+                            for (var index = 0;
+                                index < sections.length;
+                                index++)
+                              Padding(
+                                padding: EdgeInsets.only(bottom: 12.h),
+                                child: ProfileMenuSectionCard(
+                                  section: sections[index],
                                 ),
                               ),
-                            );
-                        },
-                      ),
-                      SizedBox(height: 10.h),
-                      Text(
-                        'AutoHub Express v2.4.1 · Salvage & Parts',
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: const Color(0xFF2D333B),
-                          fontSize: 10.sp,
+                            _SignOutButton(
+                              onTap: () {
+                                ScaffoldMessenger.of(context)
+                                  ..hideCurrentSnackBar()
+                                  ..showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Sign out action coming soon',
+                                      ),
+                                    ),
+                                  );
+                              },
+                            ),
+                            SizedBox(height: 10.h),
+                            Text(
+                              'AutoHub Express v2.4.1 · Salvage & Parts',
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: const Color(0xFF2D333B),
+                                fontSize: 10.sp,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              ),
+                    ),
             ),
           ],
         ),
@@ -190,21 +245,6 @@ class _TopBar extends StatelessWidget {
           children: [
             Row(
               children: [
-                GestureDetector(
-                  onTap: onBackTap,
-                  child: SizedBox(
-                    width: 18.75.w,
-                    height: 18.75.h,
-                    child: Transform.rotate(
-                      angle: math.pi,
-                      child: const Icon(
-                        AppIcons.chevronRight,
-                      
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 14.w),
                 Text(
                   'Profile',
                   style: AppTextStyles.headlineLarge.copyWith(
@@ -244,10 +284,12 @@ class _ProfileIdentityHeader extends StatelessWidget {
   const _ProfileIdentityHeader({
     required this.name,
     required this.initials,
+    required this.isVerified,
   });
 
   final String name;
   final String initials;
+  final bool isVerified;
 
   @override
   Widget build(BuildContext context) {
@@ -305,7 +347,9 @@ class _ProfileIdentityHeader extends StatelessWidget {
                   width: 20.w,
                   height: 20.h,
                   decoration: BoxDecoration(
-                    color: AppColors.onboardingGreen,
+                    color: isVerified
+                        ? AppColors.onboardingGreen
+                        : AppColors.onboardingTextSecondary,
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: AppColors.onboardingSurface,
@@ -351,15 +395,20 @@ class _ProfileIdentityHeader extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 AppIcons.profileVerified,
-                
+                size: 10.sp,
+                color: isVerified
+                    ? AppColors.onboardingGreen
+                    : AppColors.onboardingTextSecondary,
               ),
               SizedBox(width: 4.5.w),
               Text(
-                'VERIFIED',
+                isVerified ? 'VERIFIED' : 'UNVERIFIED',
                 style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.onboardingGreen,
+                  color: isVerified
+                      ? AppColors.onboardingGreen
+                      : AppColors.onboardingTextSecondary,
                   fontSize: 7.5.sp,
                   fontWeight: FontWeight.w700,
                 ),
@@ -400,7 +449,6 @@ class _SignOutButton extends StatelessWidget {
             children: [
               const Icon(
                 AppIcons.profileLogout,
-  
               ),
               SizedBox(width: 10.w),
               Text(
@@ -413,6 +461,116 @@ class _SignOutButton extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(24.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              AppIcons.profileHelp,
+              color: AppColors.error,
+              size: 48.sp,
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              'Failed to load profile',
+              style: AppTextStyles.headlineSmall.copyWith(
+                color: AppColors.onboardingTextPrimary,
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              message,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.onboardingTextSecondary,
+                fontSize: 14.sp,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 24.h),
+            ElevatedButton(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.onboardingCyan,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 12.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+              ),
+              child: Text(
+                'Retry',
+                style: AppTextStyles.labelLarge.copyWith(
+                  color: Colors.white,
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(24.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              AppIcons.profileActivity,
+              color: AppColors.onboardingTextSecondary,
+              size: 48.sp,
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              'No profile data available',
+              style: AppTextStyles.headlineSmall.copyWith(
+                color: AppColors.onboardingTextPrimary,
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'Please try again later or contact support.',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.onboardingTextSecondary,
+                fontSize: 14.sp,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );

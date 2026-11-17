@@ -26,6 +26,7 @@ class _ChatPageState extends State<ChatPage> {
   LiveChatConversation? _roomInfo;
   List<ChatMessage> _messages = [];
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -36,15 +37,27 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _loadMessages() async {
-    setState(() => _isLoading = true);
-    final room = await _repository.fetchConversationById(widget.chatRoomId);
-    final msgs = await _repository.fetchMessages(widget.chatRoomId);
-    if (mounted) {
-      setState(() {
-        _roomInfo = room ?? _repository.getConversationById(widget.chatRoomId);
-        _messages = msgs;
-        _isLoading = false;
-      });
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final room = await _repository.fetchConversationById(widget.chatRoomId);
+      final msgs = await _repository.fetchMessages(widget.chatRoomId);
+      if (mounted) {
+        setState(() {
+          _roomInfo = room ?? _repository.getConversationById(widget.chatRoomId);
+          _messages = msgs;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Failed to load messages. Please try again.';
+        });
+      }
     }
   }
 
@@ -133,6 +146,71 @@ class _ChatPageState extends State<ChatPage> {
           child: CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(
               AppColors.onboardingCyan,
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Scaffold(
+        backgroundColor: AppColors.onboardingBackground,
+        body: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 80.w,
+                  height: 80.h,
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.3),
+                      width: 0.8,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.error_outline_rounded,
+                    size: 32.sp,
+                    color: AppColors.error,
+                  ),
+                ),
+                SizedBox(height: 18.h),
+                Text(
+                  'Something went wrong',
+                  style: AppTextStyles.headlineSmall.copyWith(
+                    color: AppColors.onboardingTextPrimary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16.sp,
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Text(
+                  _errorMessage ?? 'Failed to load messages. Please try again.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.onboardingTextSecondary,
+                    fontSize: 13.sp,
+                    height: 1.4,
+                  ),
+                ),
+                SizedBox(height: 20.h),
+                ElevatedButton(
+                  onPressed: _loadMessages,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.onboardingCyan,
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+                  ),
+                  child: const Text('Retry'),
+                ),
+              ],
             ),
           ),
         ),

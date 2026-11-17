@@ -10,6 +10,28 @@ class BrowseRepositoryImpl implements BrowseRepository {
   final BrowseRemoteDatasource _remoteDatasource;
 
   @override
+  Future<int> countParts({
+    String? query,
+    List<String>? makes,
+    List<String>? categories,
+    List<String>? conditions,
+    double? maxPrice,
+  }) async {
+    try {
+      final response = await _remoteDatasource.getFilterOptions(
+        query: query,
+        makes: makes,
+        categories: categories,
+        conditions: conditions,
+        maxPrice: maxPrice,
+      );
+      return (response['count'] as num?)?.toInt() ?? 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  @override
   Future<List<ProductPartItem>> getParts() async {
     try {
       final response = await _remoteDatasource.getParts();

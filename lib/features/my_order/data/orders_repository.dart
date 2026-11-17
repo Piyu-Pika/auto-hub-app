@@ -36,6 +36,26 @@ class OrdersRepository {
     return null;
   }
 
+  /// Fetches a single order from the API, falling back to the cached list.
+  Future<Order?> fetchOrderById(String id) async {
+    final cached = getOrderById(id);
+    if (cached != null) return cached;
+    try {
+      final order = await _datasource.getOrderById(id);
+      final list = List<Order>.from(ordersNotifier.value);
+      final index = list.indexWhere((o) => o.id == id);
+      if (index != -1) {
+        list[index] = order;
+      } else {
+        list.add(order);
+      }
+      ordersNotifier.value = list;
+      return order;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> cancelOrder(String id, {String reason = 'no_longer_needed'}) async {
     final updated = await _datasource.cancelOrder(id, reason: reason);
     final list = List<Order>.from(ordersNotifier.value);
