@@ -37,6 +37,24 @@ class JunkQuoteLoaded extends JunkState {
   List<Object?> get props => [quote];
 }
 
+class JunkRequestCreated extends JunkState {
+  const JunkRequestCreated(this.request);
+
+  final JunkRequest request;
+
+  @override
+  List<Object?> get props => [request];
+}
+
+class JunkOfferAccepted extends JunkState {
+  const JunkOfferAccepted(this.request);
+
+  final JunkRequest request;
+
+  @override
+  List<Object?> get props => [request];
+}
+
 class JunkEmpty extends JunkState {
   const JunkEmpty();
 }
@@ -97,5 +115,58 @@ class JunkCubit extends Cubit<JunkState> {
       (quote) => emit(JunkQuoteLoaded(quote)),
     );
   }
-}
 
+  Future<bool> createRequest({
+    required String year,
+    required String make,
+    required String model,
+    required String condition,
+    required bool hasTitle,
+    required bool hasKeys,
+    required String pickupAddress,
+    String? vin,
+    String? notes,
+    List<String>? imageUrls,
+  }) async {
+    emit(const JunkLoading());
+    final result = await _junkRepository.createJunkRequest(
+      year: year,
+      make: make,
+      model: model,
+      condition: condition,
+      hasTitle: hasTitle,
+      hasKeys: hasKeys,
+      pickupAddress: pickupAddress,
+      vin: vin,
+      notes: notes,
+      imageUrls: imageUrls,
+    );
+
+    return result.fold(
+      (failure) {
+        emit(JunkError(failure.message));
+        return false;
+      },
+      (request) {
+        emit(JunkRequestCreated(request));
+        return true;
+      },
+    );
+  }
+
+  Future<bool> acceptOffer(String id, {required int offerAmount}) async {
+    emit(const JunkLoading());
+    final result = await _junkRepository.acceptOffer(id, offerAmount: offerAmount);
+
+    return result.fold(
+      (failure) {
+        emit(JunkError(failure.message));
+        return false;
+      },
+      (request) {
+        emit(JunkOfferAccepted(request));
+        return true;
+      },
+    );
+  }
+}

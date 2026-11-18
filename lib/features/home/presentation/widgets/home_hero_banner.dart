@@ -1,16 +1,25 @@
 import 'package:auto_hub_app/core/widgets/app_image.dart';
+import 'package:auto_hub_app/features/home/domain/entities/home_feed_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class HomeHeroBanner extends StatelessWidget {
-  final String? imageUrl;
+  const HomeHeroBanner({super.key, this.hero});
 
-  const HomeHeroBanner({super.key, this.imageUrl});
+  final HeroBannerEntity? hero;
 
   @override
   Widget build(BuildContext context) {
+    final banner = hero;
+    final imageUrl = banner?.imageUrl;
+    final title = banner?.title ?? 'Quality Used Parts';
+    final subtitle = banner?.subtitle ?? 'Houston, TX · Over 5,000 parts';
+    final ctaLabel = banner?.ctaLabel ?? 'Browse Parts';
+    final ctaUrl = banner?.ctaUrl ?? '/browse';
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: ClipRRect(
@@ -23,8 +32,8 @@ class HomeHeroBanner extends StatelessWidget {
               // Background Image
               Positioned.fill(
                 child: AppImage(
-                  imagePath: (imageUrl != null && imageUrl!.trim().isNotEmpty)
-                      ? imageUrl!
+                  imagePath: (imageUrl != null && imageUrl.trim().isNotEmpty)
+                      ? imageUrl
                       : 'assets/images/home_banner.png',
                   fit: BoxFit.cover,
                 ),
@@ -85,23 +94,30 @@ class HomeHeroBanner extends StatelessWidget {
                           ),
                         ),
                         // View all
-                        Row(
-                          children: [
-                            Text(
-                              'View all',
-                              style: GoogleFonts.inter(
-                                fontSize: 11.sp,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white.withValues(alpha: 0.6),
-                              ),
+                        Semantics(
+                          button: true,
+                          label: 'View all parts',
+                          child: GestureDetector(
+                            onTap: () => context.push('/browse'),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'View all',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11.sp,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                  ),
+                                ),
+                                SizedBox(width: 2.w),
+                                SvgPicture.asset(
+                                  'assets/icons/ic_arrow_up_right.svg',
+                                  width: 12.w,
+                                  height: 12.h,
+                                ),
+                              ],
                             ),
-                            SizedBox(width: 2.w),
-                            SvgPicture.asset(
-                              'assets/icons/ic_arrow_up_right.svg',
-                              width: 12.w,
-                              height: 12.h,
-                            ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
@@ -110,7 +126,7 @@ class HomeHeroBanner extends StatelessWidget {
 
                     // Title
                     Text(
-                      'Quality Used Parts',
+                      title,
                       style: GoogleFonts.inter(
                         fontSize: 20.sp,
                         fontWeight: FontWeight.w800,
@@ -121,7 +137,7 @@ class HomeHeroBanner extends StatelessWidget {
                     SizedBox(height: 4.h),
                     // Subtitle
                     Text(
-                      'Houston, TX · Over 5,000 parts',
+                      subtitle,
                       style: GoogleFonts.inter(
                         fontSize: 12.sp,
                         fontWeight: FontWeight.w400,
@@ -130,44 +146,54 @@ class HomeHeroBanner extends StatelessWidget {
                     ),
                     SizedBox(height: 14.h),
                     // Browse parts button
-                    Container(
-                      height: 34.h,
-                      padding: EdgeInsets.symmetric(horizontal: 14.w),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xFF0DA0CE), Color(0xFF0B8FB5)],
-                        ),
-                        borderRadius: BorderRadius.circular(14.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(
-                              0xFF0DA0CE,
-                            ).withValues(alpha: 0.45),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Browse Parts',
-                            style: GoogleFonts.inter(
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                    Semantics(
+                      button: true,
+                      label: ctaLabel,
+                      child: GestureDetector(
+                        onTap: () => context.push(ctaUrl),
+                        child: Container(
+                          height: 34.h,
+                          padding: EdgeInsets.symmetric(horizontal: 14.w),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color(0xFF0DA0CE),
+                                Color(0xFF0B8FB5),
+                              ],
                             ),
+                            borderRadius: BorderRadius.circular(14.r),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(
+                                  0xFF0DA0CE,
+                                ).withValues(alpha: 0.45),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          SizedBox(width: 4.w),
-                          SvgPicture.asset(
-                            'assets/icons/ic_chevron_right.svg',
-                            width: 12.w,
-                            height: 12.h,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                ctaLabel,
+                                style: GoogleFonts.inter(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              SizedBox(width: 4.w),
+                              SvgPicture.asset(
+                                'assets/icons/ic_chevron_right.svg',
+                                width: 12.w,
+                                height: 12.h,
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ],

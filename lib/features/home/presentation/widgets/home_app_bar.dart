@@ -1,3 +1,4 @@
+import 'package:auto_hub_app/core/constants/app_images.dart';
 import 'package:auto_hub_app/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -42,26 +43,13 @@ class HomeAppBar extends StatelessWidget {
               SizedBox(height: 2.h),
               Row(
                 children: [
-                  // Gradient 'A' logo
-                  Container(
-                    width: 24.w,
-                    height: 24.h,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFF0DA0CE), Color(0xFF0B8FB5)],
-                      ),
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'A',
-                      style: GoogleFonts.inter(
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
+                  // App logo
+                  ClipOval(
+                    child: Image.asset(
+                      AppImages.appLogo,
+                      width: 24.w,
+                      height: 24.w,
+                      fit: BoxFit.cover,
                     ),
                   ),
                   SizedBox(width: 8.w),

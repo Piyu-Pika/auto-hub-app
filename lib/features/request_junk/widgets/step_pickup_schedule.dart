@@ -17,6 +17,7 @@ class StepPickupSchedule extends StatelessWidget {
     required this.condition,
     required this.selectedImages,
     required this.onImagesChanged,
+    this.estimatedOffer,
     super.key,
   });
 
@@ -40,6 +41,9 @@ class StepPickupSchedule extends StatelessWidget {
 
   /// Callback when the list of selected images changes.
   final ValueChanged<List<String>> onImagesChanged;
+
+  /// Optional estimated instant offer from the API.
+  final int? estimatedOffer;
 
   @override
   Widget build(BuildContext context) {
@@ -328,6 +332,41 @@ class StepPickupSchedule extends StatelessWidget {
                 color: AppColors.onboardingTextSecondary,
                 fontSize: 14.sp,
                 fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+          if (estimatedOffer != null) ...[
+            SizedBox(height: 12.h),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+              decoration: BoxDecoration(
+                color: AppColors.onboardingCyan.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(
+                  color: AppColors.onboardingCyan.withValues(alpha: 0.25),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Estimated Cash Offer',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.onboardingCyan,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12.sp,
+                    ),
+                  ),
+                  Text(
+                    '\$$estimatedOffer',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.onboardingCyan,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15.sp,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

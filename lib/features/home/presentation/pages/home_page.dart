@@ -92,7 +92,7 @@ class HomePage extends StatelessWidget {
                               SizedBox(height: 16.h),
 
                               // Hero banner
-                              HomeHeroBanner(imageUrl: feed?.hero?.imageUrl),
+                              HomeHeroBanner(hero: feed?.hero),
 
                               SizedBox(height: 16.h),
 

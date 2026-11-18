@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:auto_hub_app/core/theme/app_colors.dart';
 import 'package:auto_hub_app/core/theme/app_text_styles.dart';
+import 'package:auto_hub_app/features/request_junk/domain/repositories/junk_repository.dart';
 import 'package:auto_hub_app/features/request_junk/widgets/junk_request_stepper.dart';
 import 'package:auto_hub_app/features/request_junk/widgets/step_indigator.dart';
 import 'package:auto_hub_app/features/request_junk/widgets/step_pickup_schedule.dart';
 import 'package:auto_hub_app/features/request_junk/widgets/step_vehicle_condition.dart';
 import 'package:auto_hub_app/features/request_junk/widgets/step_vehicle_info.dart';
 import 'package:auto_hub_app/features/request_junk/widgets/top_toast.dart';
+import 'package:auto_hub_app/injection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -35,10 +39,11 @@ class _NewJunkRequestState extends State<NewJunkRequest> {
   bool _hasTitle = false;
   bool _hasKeys = true;
 
-  // Step 3 controllers
+  // Step 3 controllers & values
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
   final List<String> _selectedImages = [];
+  int? _estimatedOffer;
 
   @override
   void dispose() {
@@ -82,11 +87,47 @@ class _NewJunkRequestState extends State<NewJunkRequest> {
     if (!_isCurrentStepValid) return;
 
     if (_currentStep < _totalSteps) {
+      if (_currentStep == 2) {
+        unawaited(_fetchInstantQuote());
+      }
       setState(() {
         _currentStep++;
       });
     } else {
-      _handleSubmit();
+      unawaited(_handleSubmit());
+    }
+  }
+
+  Future<void> _fetchInstantQuote() async {
+    try {
+      final repo = getIt<JunkRepository>();
+      final result = await repo.getInstantQuote(
+        year: _yearController.text.trim(),
+        make: _makeController.text.trim(),
+        model: _modelController.text.trim(),
+        condition: _selectedCondition,
+        hasTitle: _hasTitle,
+        hasKeys: _hasKeys,
+        vin: _vinController.text.trim().isEmpty
+            ? null
+            : _vinController.text.trim(),
+      );
+
+      if (mounted) {
+        result.fold(
+          (_) => null,
+          (data) {
+            final offer = data['estimatedOffer'];
+            if (offer is int) {
+              setState(() => _estimatedOffer = offer);
+            } else if (offer is num) {
+              setState(() => _estimatedOffer = offer.toInt());
+            }
+          },
+        );
+      }
+    } catch (_) {
+      // Ignore quote fetch errors so user can still proceed with submission
     }
   }
 
@@ -98,29 +139,89 @@ class _NewJunkRequestState extends State<NewJunkRequest> {
     }
   }
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
     if (_isSubmitting || !_isStep3Valid) return;
 
     setState(() {
       _isSubmitting = true;
     });
 
-    // Show top toast overlay
-    TopToast.show(
-      context,
-      "Junk request submitted! You'll receive an offer shortly.",
-    );
+    try {
+      final repo = getIt<JunkRepository>();
 
-    // Delay 2.5 seconds to showcase the premium toast, then go back
-    Future.delayed(const Duration(milliseconds: 2600), () {
-      if (mounted) {
-        if (context.canPop()) {
-          context.pop();
-        } else {
-          context.go('/my-request-junk');
-        }
+      List<String>? imageUrls;
+      if (_selectedImages.isNotEmpty) {
+        final uploadResult = await repo.uploadVehicleImages(_selectedImages);
+        uploadResult.fold(
+          (_) => null,
+          (urls) {
+            imageUrls = urls;
+          },
+        );
       }
-    });
+
+      final result = await repo.createJunkRequest(
+        year: _yearController.text.trim(),
+        make: _makeController.text.trim(),
+        model: _modelController.text.trim(),
+        condition: _selectedCondition,
+        hasTitle: _hasTitle,
+        hasKeys: _hasKeys,
+        pickupAddress: _addressController.text.trim(),
+        vin: _vinController.text.trim().isEmpty
+            ? null
+            : _vinController.text.trim(),
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
+        imageUrls: imageUrls,
+      );
+
+      if (!mounted) return;
+
+      result.fold(
+        (failure) {
+          setState(() {
+            _isSubmitting = false;
+          });
+          TopToast.show(
+            context,
+            failure.message.isNotEmpty
+                ? failure.message
+                : 'Failed to submit junk request. Please try again.',
+          );
+        },
+        (createdRequest) {
+          setState(() {
+            _isSubmitting = false;
+          });
+          TopToast.show(
+            context,
+            "Junk request submitted! You'll receive an offer shortly.",
+          );
+
+          Future.delayed(const Duration(milliseconds: 1500), () {
+            if (mounted) {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/my-request-junk');
+              }
+            }
+          });
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+        TopToast.show(
+          context,
+          'An unexpected error occurred. Please try again.',
+        );
+      }
+    }
   }
 
   String get _combinedVehicleTitle {
@@ -206,14 +307,15 @@ class _NewJunkRequestState extends State<NewJunkRequest> {
             });
           },
         );
-        case 3:
-          return StepPickupSchedule(
+      case 3:
+        return StepPickupSchedule(
           addressController: _addressController,
           notesController: _notesController,
           onChanged: _onStepChanged,
           vehicleTitle: _combinedVehicleTitle,
           condition: _selectedCondition,
           selectedImages: _selectedImages,
+          estimatedOffer: _estimatedOffer,
           onImagesChanged: (images) {
             setState(() {
               _selectedImages.clear();
@@ -228,7 +330,7 @@ class _NewJunkRequestState extends State<NewJunkRequest> {
 
   Widget _buildBottomActionBar() {
     final isValid = _isCurrentStepValid && !_isSubmitting;
-    final showBack = _currentStep > 1;
+    final showBack = _currentStep > 1 && !_isSubmitting;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
@@ -252,6 +354,7 @@ class _NewJunkRequestState extends State<NewJunkRequest> {
               label: _currentStep == _totalSteps ? 'Submit Request' : 'Continue',
               onTap: isValid ? _handleNext : null,
               isPrimary: true,
+              isLoading: _isSubmitting,
             ),
           ),
         ],
@@ -263,8 +366,9 @@ class _NewJunkRequestState extends State<NewJunkRequest> {
     required String label,
     required VoidCallback? onTap,
     required bool isPrimary,
+    bool isLoading = false,
   }) {
-    final isEnabled = onTap != null;
+    final isEnabled = onTap != null && !isLoading;
 
     if (!isPrimary) {
       // Back button styling
@@ -317,19 +421,29 @@ class _NewJunkRequestState extends State<NewJunkRequest> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap,
+          onTap: isEnabled ? onTap : null,
           borderRadius: BorderRadius.circular(16.r),
           child: Center(
-            child: Text(
-              label,
-              style: AppTextStyles.button.copyWith(
-                color: isEnabled
-                    ? Colors.white
-                    : AppColors.onboardingTextSecondary.withValues(alpha: 0.5),
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            child: isLoading
+                ? SizedBox(
+                    width: 22.w,
+                    height: 22.w,
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Text(
+                    label,
+                    style: AppTextStyles.button.copyWith(
+                      color: isEnabled
+                          ? Colors.white
+                          : AppColors.onboardingTextSecondary
+                              .withValues(alpha: 0.5),
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
           ),
         ),
       ),

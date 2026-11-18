@@ -2,10 +2,11 @@ import 'package:auto_hub_app/core/shell/main_shell.dart';
 import 'package:auto_hub_app/features/account_details/presentation/pages/account_details_page.dart';
 import 'package:auto_hub_app/features/account_details/presentation/pages/edit_account_details_page.dart';
 import 'package:auto_hub_app/features/auth/presentation/pages/auth_screen.dart';
+import 'package:auto_hub_app/features/browse/presentation/pages/browse_page.dart';
 import 'package:auto_hub_app/features/contact_support/presentation/pages/contact_support_page.dart';
 import 'package:auto_hub_app/features/help_center/presentation/pages/help_center_page.dart';
 import 'package:auto_hub_app/features/messages/presentation/pages/chat_page.dart';
-import 'package:auto_hub_app/features/messages/presentation/pages/live_chats_page.dart' ;
+import 'package:auto_hub_app/features/messages/presentation/pages/live_chats_page.dart';
 import 'package:auto_hub_app/features/my_order/presentation/pages/my_orders.dart';
 import 'package:auto_hub_app/features/my_order/presentation/pages/order_details_page.dart';
 import 'package:auto_hub_app/features/onboarding/presentation/pages/onboarding_page.dart';
@@ -44,6 +45,12 @@ final GoRouter appRouter = GoRouter(
       path: '/',
       name: 'home',
       builder: (context, state) => const MainShell(),
+    ),
+    // browse feature
+    GoRoute(
+      path: '/browse',
+      name: 'browse',
+      builder: (context, state) => const BrowsePage(),
     ),
     GoRoute(
       path: '/part-details/:id',
@@ -102,7 +109,7 @@ final GoRouter appRouter = GoRouter(
         return ChatPage(chatRoomId: chatRoomId);
       },
     ),
-    
+
     // contact_support feature
     GoRoute(
       path: '/contact-support',
@@ -115,8 +122,9 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         final chatRoomId = state.pathParameters['chatRoomId'] ?? '1';
         return ChatPage(chatRoomId: chatRoomId);
-      },),
-      GoRoute(
+      },
+    ),
+    GoRoute(
       path: '/contact-support-chat',
       name: 'contact-support-chat',
       builder: (context, state) => const LiveChatPage(),
@@ -140,13 +148,14 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/settings',
       name: 'settings',
-      builder: (context, state) => const SettingsPage(),),
-
-     GoRoute(
+      builder: (context, state) => const SettingsPage(),
+    ),
+    GoRoute(
       path: '/payment-methods',
       name: 'payment-methods',
-      builder: (context, state) => const PaymentMethodPage(),),
-      GoRoute(
+      builder: (context, state) => const PaymentMethodPage(),
+    ),
+    GoRoute(
       path: '/my-request-junk',
       name: 'my-request-junk',
       builder: (context, state) => const MyRequestJunk(),
