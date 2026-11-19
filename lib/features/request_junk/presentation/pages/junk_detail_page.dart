@@ -212,11 +212,23 @@ class _JunkDetailPageState extends State<JunkDetailPage> {
                     SizedBox(height: 16.h),
                     JunkOverviewCard(request: request),
                     SizedBox(height: 16.h),
-                    VehicleInfoCard(request: request),
+                    VehicleInfoCard(
+                      condition: request.condition,
+                      notes: request.notes,
+                    ),
+                    if (request.status == JunkRequestStatus.pickupScheduled &&
+                        request.pickupDateTime != null) ...[
+                      SizedBox(height: 16.h),
+                      PickupDetailsCard(
+                        pickupDateTime: request.pickupDateTime!,
+                        towCompany: request.towCompany ?? '',
+                      ),
+                    ],
                     SizedBox(height: 16.h),
-                    PickupDetailsCard(request: request),
-                    SizedBox(height: 16.h),
-                    SalvageYardCard(request: request),
+                    SalvageYardCard(
+                      name: request.salvageYardName,
+                      phone: request.salvageYardPhone,
+                    ),
                     SizedBox(height: 32.h),
                   ],
                 ),
